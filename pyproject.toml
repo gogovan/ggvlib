@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "gogovan-analytics-cheat-detection"
+version = "0.1.0"
+description = "A cheat detection engine for Gogox"
+authors = ["Jace Chun <jace.chun@gogox.com>", "Adam Hoffstein <adam.hoffstein@gogox.com>"]
+
+[tool.poetry.dependencies]
+python = ">=3.8,<3.11"
+pandas = "^1.4.3"
+google-cloud-bigquery = {extras = ["bqstorage", "pandas"], version = "^3.2.0"}
+
+[tool.poetry.dev-dependencies]
+black = "^22.6.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
