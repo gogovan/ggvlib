@@ -1011,41 +1011,42 @@ def process_cheating_upload(date: datetime.date, country: str):
         order_output["order_created_at"]
     )
 
-    # float_col_list = [
-    #     "lat",
-    #     "lon",
-    #     "distance_trip",
-    #     "time_diff_in_ms_trip",
-    #     "speed_in_m_per_s_trip",
-    #     "accept_from_far",
-    # ]
-    # int_col_list = ["ct_speedy_driving", "waypoints_count"]
-    # string_col_list = [
-    #     "meta",
-    #     "actor_id",
-    #     "actor_type",
-    #     "driver",
-    #     "country",
-    #     "order_request_id_with_product",
-    #     "system_order_request_id",
-    #     "status",
-    #     "product_name",
-    #     "pickup_location_lat",
-    #     "pickup_location_lon",
-    #     "pickup_location_address",
-    #     "pickup_location_region",
-    #     "destination_location_lat",
-    #     "destination_location_lon",
-    #     "destination_location_address",
-    #     "destination_location_region",
-    #     "requirements_need_carry",
-    #     "requirements_need_carry_no_lift",
-    #     "order_type",
-    # ]
-    # [TODO] fix this
-    # order_output = fill_format(order_output, float_col_list, float(0), float)
-    # order_output = fill_format(order_output, int_col_list, 0, int)
-    # order_output = fill_format(order_output, string_col_list, "", str)
+    float_col_list = [
+        "lat",
+        "lon",
+        "distance_trip",
+        "time_diff_in_ms_trip",
+        "speed_in_m_per_s_trip",
+        "accept_from_far",
+    ]
+    int_col_list = ["ct_speedy_driving", "waypoints_count"]
+    string_col_list = [
+        "meta",
+        "actor_id",
+        "actor_type",
+        "driver",
+        "country",
+        "order_request_id_with_product",
+        "system_order_request_id",
+        "status",
+        "product_name",
+        "pickup_location_lat",
+        "pickup_location_lon",
+        "pickup_location_address",
+        "pickup_location_region",
+        "destination_location_lat",
+        "destination_location_lon",
+        "destination_location_address",
+        "destination_location_region",
+        "requirements_need_carry",
+        "requirements_need_carry_no_lift",
+        "order_type",
+    ]
+
+    order_output = fill_format(order_output, float_col_list, float(0), float)
+    order_output = fill_format(order_output, int_col_list, 0, int)
+    order_output = fill_format(order_output, string_col_list, "", str)
+
     driver_summary = driver_summary.rename(
         columns={
             "driver": "driver_id",
@@ -1086,3 +1087,10 @@ def process_cheating_upload(date: datetime.date, country: str):
         },
         inplace=True,
     )
+    driver_summary['cheat_score'] = [int(a)+int(b)+int(c)+int(d)+int(e)+int(f) for a,b,c,d,e,f in zip(driver_summary['fake_gps'],driver_summary['repeat_gps'],driver_summary['pick_accept_bot'],driver_summary['speedy_driving'],driver_summary['far_accept'],driver_summary['repeat_pick'])]
+
+    int_col_list = ['gps_ct','fake_gps_ct','repeat_gps_ct','pick_2s_ct','pick_driving_2s_ct','accept_2s_ct','pick_1s_ct','pick_driving_1s_ct','accept_1s_ct','speedy_driving_ct','far_accept_ct','orders_ct','repeat_pick_ct']
+    float_col_list = ['fake_gps_p','fake_gps_p_pct','pick_2s_p','pick_1s_p','accept_2s_p','accept_1s_p','pick_2s_p_pct','pick_1s_p_pct','accept_2s_p_pct','accept_1s_p_pct','far_accept_p','far_accept_p_pct','repeat_pick_p','repeat_pick_p_pct']
+
+    driver_summary = fill_format(driver_summary,int_col_list,0,int)
+    driver_summary = fill_format(driver_summary,float_col_list,float(0),float)
