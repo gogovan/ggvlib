@@ -8,6 +8,7 @@ authors = ["Jace Chun <jace.chun@gogox.com>", "Adam Hoffstein <adam.hoffstein@go
 python = ">=3.8,<3.11"
 pandas = "^1.4.3"
 google-cloud-bigquery = {extras = ["bqstorage", "pandas"], version = "^3.2.0"}
+loguru = "^0.6.0"
 
 [tool.poetry.dev-dependencies]
 black = "^22.6.0"
