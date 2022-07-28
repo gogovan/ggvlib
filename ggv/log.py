@@ -8,4 +8,4 @@ logger.add(
     format="<green>{time}</green> <level>{message}</level>",
     filter="sub.module",
 )
-logger.add("logs/cheat-detect-{time:YYYY-MM-DD}.log")
+logger.add("/tmp/cheat-detect-{time:YYYY-MM-DD}.log")

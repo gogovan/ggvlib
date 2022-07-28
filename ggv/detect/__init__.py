@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Tuple
 from google.cloud import bigquery
 from ggv.log import logger
 import pandas as pd
@@ -737,7 +738,9 @@ def fill_format(df, col_list, fill_content, format_type):
     return df
 
 
-def process_cheating_upload(date: datetime.date, country: str):
+def process(
+    date: datetime.date, country: str
+) -> Tuple[pd.DataFrame, pd.DataFrame]:
     gps = get_driver_gps_bq(date, country)
     order_events_check = get_order_events_bq(date, country)
     repeat_gps = get_repeat_gps(df=gps, repeat_gps_threshold=REPEAT_GPS_TIMES)
@@ -841,18 +844,28 @@ def process_cheating_upload(date: datetime.date, country: str):
         right_on="driver",
     )
     rule_gps = driver_summary["ct>=speed_threshold_gps"] >= SPEEDY_FREQUENCY
-    rule_repeat_gps = driver_summary["ct_>=gps_repeat_threshold"] >= REPEAT_GPS_FREQUENCY
+    rule_repeat_gps = (
+        driver_summary["ct_>=gps_repeat_threshold"] >= REPEAT_GPS_FREQUENCY
+    )
     rule_pick_2s = driver_summary["pick%_<=2s"] >= PICK_ACCEPT_THRESHOLD
     rule_accept_2s = driver_summary["accept%_<=2s"] >= PICK_ACCEPT_THRESHOLD
     rule_pick_1s = driver_summary["pick%_<=1s"] >= PICK_ACCEPT_THRESHOLD
     rule_accept_1s = driver_summary["accept%_<=1s"] >= PICK_ACCEPT_THRESHOLD
-    rule_driving_speed = driver_summary["ct_speedy_driving"] >= TRAVEL_FREQUENCY
-    rule_repeat_pick = driver_summary["ct_repeat_pick"] >= REPEAT_PICKING_FREQUENCY
-    rule_accept_far = driver_summary["ct_accept_far"] >= ACCEPT_DISTANCE_FREQUENCY
+    rule_driving_speed = (
+        driver_summary["ct_speedy_driving"] >= TRAVEL_FREQUENCY
+    )
+    rule_repeat_pick = (
+        driver_summary["ct_repeat_pick"] >= REPEAT_PICKING_FREQUENCY
+    )
+    rule_accept_far = (
+        driver_summary["ct_accept_far"] >= ACCEPT_DISTANCE_FREQUENCY
+    )
 
     driver_summary["fake_gps"] = rule_gps
     driver_summary["repeat_gps"] = rule_repeat_gps
-    driver_summary["pick_accept_bot"] = (rule_pick_2s)|(rule_accept_2s)|(rule_pick_1s)|(rule_accept_1s)
+    driver_summary["pick_accept_bot"] = (
+        (rule_pick_2s) | (rule_accept_2s) | (rule_pick_1s) | (rule_accept_1s)
+    )
     driver_summary["speedy_driving"] = rule_driving_speed
     driver_summary["repeat_pick"] = rule_repeat_pick
     driver_summary["far_accept"] = rule_accept_far
@@ -1077,11 +1090,21 @@ def process_cheating_upload(date: datetime.date, country: str):
         }
     )
 
-    driver_summary = driver_summary.dropna(subset = ['driver_id'])
+    driver_summary = driver_summary.dropna(subset=["driver_id"])
 
-    driver_summary["cheat_score"] = [int(a)+int(b)+int(c)+int(d)+int(e)+int(f) for a,b,c,d,e,f in zip(driver_summary["fake_gps"],driver_summary["repeat_gps"],driver_summary["pick_accept_bot"],driver_summary["speedy_driving"],driver_summary["far_accept"],driver_summary["repeat_pick"])]
+    driver_summary["cheat_score"] = [
+        int(a) + int(b) + int(c) + int(d) + int(e) + int(f)
+        for a, b, c, d, e, f in zip(
+            driver_summary["fake_gps"],
+            driver_summary["repeat_gps"],
+            driver_summary["pick_accept_bot"],
+            driver_summary["speedy_driving"],
+            driver_summary["far_accept"],
+            driver_summary["repeat_pick"],
+        )
+    ]
 
-    int_col_list = [        
+    int_col_list = [
         "gps_ct",
         "fake_gps_ct",
         "repeat_gps_ct",
@@ -1113,5 +1136,11 @@ def process_cheating_upload(date: datetime.date, country: str):
         "repeat_pick_p_pct",
     ]
 
-    driver_summary = fill_format(driver_summary,int_col_list,0,int)
-    driver_summary = fill_format(driver_summary,float_col_list,float(0),float)
+    driver_summary = fill_format(driver_summary, int_col_list, 0, int)
+    driver_summary = fill_format(
+        driver_summary, float_col_list, float(0), float
+    )
+    del order_output["date"]
+    del order_output["country"]
+    del driver_summary["dt"]
+    return driver_summary, order_output
