@@ -10,4 +10,4 @@
 1. Run `./deploy.sh`.
 
 ## Scheduling
-1. You can modify the schedule on GCP [here](https://console.cloud.google.com/cloudscheduler/jobs/edit/asia-east2/schedule-driver-cheat-detection?authuser=0&project=gogox-data-science-non-prod)
+1. You can modify the schedule on GCP [here](https://console.cloud.google.com/cloudscheduler/jobs/edit/asia-east2/schedule-driver-cheat-detection?authuser=0&project=gogox-data-science-non-prod).
