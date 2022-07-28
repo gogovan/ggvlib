@@ -77,7 +77,7 @@ def get_order_events_bq(date: datetime.date, country: str) -> pd.DataFrame:
     WITH
       temp1 AS (
       SELECT
-        order_request_id,
+        cast(order_request_id as String) as order_request_id,
         actor_id,
         actor_type,
         driver_id,
@@ -97,7 +97,7 @@ def get_order_events_bq(date: datetime.date, country: str) -> pd.DataFrame:
         AND country = '{country}'),
       temp2 AS (
       SELECT
-        order_request_id,
+        cast(order_request_id as String) as order_request_id,
         actor_id,
         actor_type,
         driver_id,
@@ -132,7 +132,7 @@ def get_order_events_bq(date: datetime.date, country: str) -> pd.DataFrame:
           5) ),
       temp3 AS (
       SELECT
-        source_order_request_id,
+        cast(source_order_request_id as String) as source_order_request_id,
         standard_order_request_id,
         status,
         product_name,
@@ -160,7 +160,7 @@ def get_order_events_bq(date: datetime.date, country: str) -> pd.DataFrame:
       WHERE
         DATE(created_at) = DATE('{date}'))
     SELECT
-      temp1.order_request_id,
+      temp1.order_request_id ,
       temp1.actor_id,
       temp1.actor_type,
       temp1.event_type_cd,
@@ -180,7 +180,7 @@ def get_order_events_bq(date: datetime.date, country: str) -> pd.DataFrame:
       temp1.dt AS date,
       upper('{country}') as country,
       temp3.standard_order_request_id as order_request_id_master_table,
-      temp3.source_order_request_id as system_order_request_id,
+      CAST(temp3.source_order_request_id as String) as system_order_request_id,
       temp3.status,
       temp3.created_at as order_created_at,
       temp3.completed_at,
@@ -841,28 +841,18 @@ def process_cheating_upload(date: datetime.date, country: str):
         right_on="driver",
     )
     rule_gps = driver_summary["ct>=speed_threshold_gps"] >= SPEEDY_FREQUENCY
-    rule_repeat_gps = (
-        driver_summary["ct_>=gps_repeat_threshold"] >= REPEAT_GPS_FREQUENCY
-    )
+    rule_repeat_gps = driver_summary["ct_>=gps_repeat_threshold"] >= REPEAT_GPS_FREQUENCY
     rule_pick_2s = driver_summary["pick%_<=2s"] >= PICK_ACCEPT_THRESHOLD
     rule_accept_2s = driver_summary["accept%_<=2s"] >= PICK_ACCEPT_THRESHOLD
     rule_pick_1s = driver_summary["pick%_<=1s"] >= PICK_ACCEPT_THRESHOLD
     rule_accept_1s = driver_summary["accept%_<=1s"] >= PICK_ACCEPT_THRESHOLD
-    rule_driving_speed = (
-        driver_summary["ct_speedy_driving"] >= TRAVEL_FREQUENCY
-    )
-    rule_repeat_pick = (
-        driver_summary["ct_repeat_pick"] >= REPEAT_PICKING_FREQUENCY
-    )
-    rule_accept_far = (
-        driver_summary["ct_accept_far"] >= ACCEPT_DISTANCE_FREQUENCY
-    )
+    rule_driving_speed = driver_summary["ct_speedy_driving"] >= TRAVEL_FREQUENCY
+    rule_repeat_pick = driver_summary["ct_repeat_pick"] >= REPEAT_PICKING_FREQUENCY
+    rule_accept_far = driver_summary["ct_accept_far"] >= ACCEPT_DISTANCE_FREQUENCY
 
     driver_summary["fake_gps"] = rule_gps
     driver_summary["repeat_gps"] = rule_repeat_gps
-    driver_summary["pick_accept_bot"] = (
-        (rule_pick_2s) | (rule_accept_2s) | (rule_pick_1s) | (rule_accept_1s)
-    )
+    driver_summary["pick_accept_bot"] = (rule_pick_2s)|(rule_accept_2s)|(rule_pick_1s)|(rule_accept_1s)
     driver_summary["speedy_driving"] = rule_driving_speed
     driver_summary["repeat_pick"] = rule_repeat_pick
     driver_summary["far_accept"] = rule_accept_far
@@ -1011,41 +1001,42 @@ def process_cheating_upload(date: datetime.date, country: str):
         order_output["order_created_at"]
     )
 
-    # float_col_list = [
-    #     "lat",
-    #     "lon",
-    #     "distance_trip",
-    #     "time_diff_in_ms_trip",
-    #     "speed_in_m_per_s_trip",
-    #     "accept_from_far",
-    # ]
-    # int_col_list = ["ct_speedy_driving", "waypoints_count"]
-    # string_col_list = [
-    #     "meta",
-    #     "actor_id",
-    #     "actor_type",
-    #     "driver",
-    #     "country",
-    #     "order_request_id_with_product",
-    #     "system_order_request_id",
-    #     "status",
-    #     "product_name",
-    #     "pickup_location_lat",
-    #     "pickup_location_lon",
-    #     "pickup_location_address",
-    #     "pickup_location_region",
-    #     "destination_location_lat",
-    #     "destination_location_lon",
-    #     "destination_location_address",
-    #     "destination_location_region",
-    #     "requirements_need_carry",
-    #     "requirements_need_carry_no_lift",
-    #     "order_type",
-    # ]
-    # [TODO] fix this
-    # order_output = fill_format(order_output, float_col_list, float(0), float)
-    # order_output = fill_format(order_output, int_col_list, 0, int)
-    # order_output = fill_format(order_output, string_col_list, "", str)
+    float_col_list = [
+        "lat",
+        "lon",
+        "distance_trip",
+        "time_diff_in_ms_trip",
+        "speed_in_m_per_s_trip",
+        "accept_from_far",
+    ]
+    int_col_list = ["ct_speedy_driving", "waypoints_count"]
+    string_col_list = [
+        "meta",
+        "actor_id",
+        "actor_type",
+        "driver",
+        "country",
+        "order_request_id_with_product",
+        "system_order_request_id",
+        "status",
+        "product_name",
+        "pickup_location_lat",
+        "pickup_location_lon",
+        "pickup_location_address",
+        "pickup_location_region",
+        "destination_location_lat",
+        "destination_location_lon",
+        "destination_location_address",
+        "destination_location_region",
+        "requirements_need_carry",
+        "requirements_need_carry_no_lift",
+        "order_type",
+    ]
+
+    order_output = fill_format(order_output, float_col_list, float(0), float)
+    order_output = fill_format(order_output, int_col_list, 0, int)
+    order_output = fill_format(order_output, string_col_list, " ", str)
+
     driver_summary = driver_summary.rename(
         columns={
             "driver": "driver_id",
@@ -1083,6 +1074,44 @@ def process_cheating_upload(date: datetime.date, country: str):
             "ct_repeat_pick": "repeat_pick_ct",
             "p_repeat_pick": "repeat_pick_p",
             "pct_p_repeat_pick": "repeat_pick_p_pct",
-        },
-        inplace=True,
+        }
     )
+
+    driver_summary = driver_summary.dropna(subset = ['driver_id'])
+
+    driver_summary["cheat_score"] = [int(a)+int(b)+int(c)+int(d)+int(e)+int(f) for a,b,c,d,e,f in zip(driver_summary["fake_gps"],driver_summary["repeat_gps"],driver_summary["pick_accept_bot"],driver_summary["speedy_driving"],driver_summary["far_accept"],driver_summary["repeat_pick"])]
+
+    int_col_list = [        
+        "gps_ct",
+        "fake_gps_ct",
+        "repeat_gps_ct",
+        "pick_2s_ct",
+        "pick_driving_2s_ct",
+        "accept_2s_ct",
+        "pick_1s_ct",
+        "pick_driving_1s_ct",
+        "accept_1s_ct",
+        "speedy_driving_ct",
+        "far_accept_ct",
+        "orders_ct",
+        "repeat_pick_ct",
+    ]
+    float_col_list = [
+        "fake_gps_p",
+        "fake_gps_p_pct",
+        "pick_2s_p",
+        "pick_1s_p",
+        "accept_2s_p",
+        "accept_1s_p",
+        "pick_2s_p_pct",
+        "pick_1s_p_pct",
+        "accept_2s_p_pct",
+        "accept_1s_p_pct",
+        "far_accept_p",
+        "far_accept_p_pct",
+        "repeat_pick_p",
+        "repeat_pick_p_pct",
+    ]
+
+    driver_summary = fill_format(driver_summary,int_col_list,0,int)
+    driver_summary = fill_format(driver_summary,float_col_list,float(0),float)
