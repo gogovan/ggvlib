@@ -1,10 +1,11 @@
 from datetime import datetime, timedelta
+import os
 from ggv.detect import process
 from ggv.detect.storage import upload_df
 
 
 def run_driver_cheat_detection(message: dict = {}, event: dict = {}) -> None:
-    countries = ["sg", "vn"]
+    countries = os.environ["COUNTRIES"].split("|")
 
     yesterday = str(datetime.utcnow().date() - timedelta(days=1))
 
