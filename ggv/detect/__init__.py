@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Tuple
+from this import d
 from google.cloud import bigquery
 from ggv.log import logger
 import pandas as pd
@@ -78,6 +78,7 @@ def get_order_events_bq(date: datetime.date, country: str) -> pd.DataFrame:
     WITH
       temp1 AS (
       SELECT
+        country,
         cast(order_request_id as String) as order_request_id,
         actor_id,
         actor_type,
@@ -133,7 +134,7 @@ def get_order_events_bq(date: datetime.date, country: str) -> pd.DataFrame:
           5) ),
       temp3 AS (
       SELECT
-        cast(source_order_request_id as String) as source_order_request_id,
+        cast(system_order_request_id as String) as source_order_request_id,
         standard_order_request_id,
         status,
         product_name,
@@ -145,19 +146,17 @@ def get_order_events_bq(date: datetime.date, country: str) -> pd.DataFrame:
         cancelled_at,
         driver_id,
         waypoint_count,
-        origin_zone_name,
-        origin_address,
-        origin_address_details,
-        origin_latitude,
-        origin_longitude,
-        destination_zone_name,
-        destination_address,
-        destination_address_details,
-        destination_latitude,
-        destination_longitude,
+        pickup_location_region,
+        pickup_location_address,
+        pickup_location_lat,
+        pickup_location_lon,
+        destination_location_region,
+        destination_location_address,
+        destination_location_lat,
+        destination_location_lon,
         booking_type
       FROM
-        `gogox-data-science-non-prod.analytics_prod_master.order_requests_master_table_{country}`
+        `gogox-data-science-non-prod.analytics_prod_master.order_master_table_{country}`
       WHERE
         DATE(created_at) = DATE('{date}'))
     SELECT
@@ -189,14 +188,14 @@ def get_order_events_bq(date: datetime.date, country: str) -> pd.DataFrame:
       temp3.product_name,
       temp3.picked_up_at AS order_pick_up_at,
       temp3.drop_off_at AS order_drop_off_at,
-      temp3.origin_latitude as pickup_location_lat,
-      temp3.origin_longitude as pickup_location_lon,
-      temp3.origin_address as pickup_location_address,
-      temp3.origin_zone_name as pickup_location_region,
-      temp3.destination_latitude as destination_location_lat,
-      temp3.destination_longitude as destination_location_lon,
-      temp3.destination_address as destination_location_address,
-      temp3.destination_zone_name as destination_location_region,
+      temp3.pickup_location_lat as pickup_location_lat,
+      temp3.pickup_location_lon as pickup_location_lon,
+      temp3.pickup_location_address as pickup_location_address,
+      temp3.pickup_location_region as pickup_location_region,
+      temp3.destination_location_lat as destination_location_lat,
+      temp3.destination_location_lon as destination_location_lon,
+      temp3.destination_location_address as destination_location_address,
+      temp3.destination_location_region as destination_location_region,
       '' as requirements_need_carry,
       '' as requirements_need_carry_no_lift,
       temp3.waypoint_count,
@@ -586,7 +585,7 @@ def get_repeat_pick(
         .groupby(["driver"])
         .size()
         .reset_index()
-        .rename(columns={0: "ct_orders"})
+        .rename(columns={0: "ct_orders_pick"})
     )
     repeat_pick = (
         df[df["ct_pick"] >= repeat_picking_threshold]
@@ -604,7 +603,7 @@ def get_repeat_pick(
     )
     repeat["p_repeat_pick"] = [
         x / y if y != 0 else 0
-        for x, y in zip(repeat["ct_repeat_pick"], repeat["ct_orders"])
+        for x, y in zip(repeat["ct_repeat_pick"], repeat["ct_orders_pick"])
     ]
     temp = repeat[repeat["ct_repeat_pick"] > 0][["driver", "p_repeat_pick"]]
     temp_pct = (
@@ -622,6 +621,20 @@ def get_repeat_pick(
     )
     return repeat_df
 
+
+def get_completed_cancelled_released(
+    df: pd.DataFrame
+)-> pd.DataFrame:
+    df = df[df["actor_type"] == "Driver"]
+    
+    release = df[(df["event_type_cd"] == 21)|(df["event_type_cd"] ==4)][["actor_id","order_request_id"]].groupby(["actor_id"]).nunique().reset_index().rename(columns={"actor_id":"driver_id","order_request_id":"ct_orders_release"})
+    cancel = df[(df["event_type_cd"] == 3)][["actor_id","order_request_id"]].groupby(["actor_id"]).nunique().reset_index().rename(columns={"actor_id":"driver_id","order_request_id":"ct_orders_cancel"})
+    complete = df[(df["event_type_cd"] == 6)][["actor_id","order_request_id"]].groupby(["actor_id"]).nunique().reset_index().rename(columns={"actor_id":"driver_id","order_request_id":"ct_orders_complete"})
+    
+    return_df = pd.merge(complete, release, how = "outer", left_on ="driver_id", right_on = "driver_id")
+    return_df = pd.merge(return_df, cancel, how = "outer", left_on ="driver_id", right_on = "driver_id")
+    
+    return return_df
 
 def get_pc_pct(df: pd.DataFrame) -> pd.DataFrame:
     df["driver"] = df["driver"].astype(str)
@@ -738,9 +751,7 @@ def fill_format(df, col_list, fill_content, format_type):
     return df
 
 
-def process(
-    date: datetime.date, country: str
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+def process_cheating_upload(date: datetime.date, country: str):
     gps = get_driver_gps_bq(date, country)
     order_events_check = get_order_events_bq(date, country)
     repeat_gps = get_repeat_gps(df=gps, repeat_gps_threshold=REPEAT_GPS_TIMES)
@@ -827,6 +838,12 @@ def process(
     repeat_pick = get_repeat_pick(
         order_pick_driving_far, repeat_picking_threshold=REPEAT_PICKING_TIMES
     )
+  
+    driver_order_status = get_completed_cancelled_released(
+        order_events_check
+    )
+
+
     driver_pick_speed_far_p = get_pc_pct(driver_pick_speed_far)
     driver_table = pd.merge(
         gps_speedy_final,
@@ -843,29 +860,27 @@ def process(
         left_on="driver_id",
         right_on="driver",
     )
-    rule_gps = driver_summary["ct>=speed_threshold_gps"] >= SPEEDY_FREQUENCY
-    rule_repeat_gps = (
-        driver_summary["ct_>=gps_repeat_threshold"] >= REPEAT_GPS_FREQUENCY
+    driver_summary = pd.merge(
+        driver_summary,
+        driver_order_status,
+        how="left",
+        left_on="driver_id",
+        right_on="driver_id",
     )
+
+    rule_gps = driver_summary["ct>=speed_threshold_gps"] >= SPEEDY_FREQUENCY
+    rule_repeat_gps = driver_summary["ct_>=gps_repeat_threshold"] >= REPEAT_GPS_FREQUENCY
     rule_pick_2s = driver_summary["pick%_<=2s"] >= PICK_ACCEPT_THRESHOLD
     rule_accept_2s = driver_summary["accept%_<=2s"] >= PICK_ACCEPT_THRESHOLD
     rule_pick_1s = driver_summary["pick%_<=1s"] >= PICK_ACCEPT_THRESHOLD
     rule_accept_1s = driver_summary["accept%_<=1s"] >= PICK_ACCEPT_THRESHOLD
-    rule_driving_speed = (
-        driver_summary["ct_speedy_driving"] >= TRAVEL_FREQUENCY
-    )
-    rule_repeat_pick = (
-        driver_summary["ct_repeat_pick"] >= REPEAT_PICKING_FREQUENCY
-    )
-    rule_accept_far = (
-        driver_summary["ct_accept_far"] >= ACCEPT_DISTANCE_FREQUENCY
-    )
+    rule_driving_speed = driver_summary["ct_speedy_driving"] >= TRAVEL_FREQUENCY
+    rule_repeat_pick = driver_summary["ct_repeat_pick"] >= REPEAT_PICKING_FREQUENCY
+    rule_accept_far = driver_summary["ct_accept_far"] >= ACCEPT_DISTANCE_FREQUENCY
 
     driver_summary["fake_gps"] = rule_gps
     driver_summary["repeat_gps"] = rule_repeat_gps
-    driver_summary["pick_accept_bot"] = (
-        (rule_pick_2s) | (rule_accept_2s) | (rule_pick_1s) | (rule_accept_1s)
-    )
+    driver_summary["pick_accept_bot"] = (rule_pick_2s)|(rule_accept_2s)|(rule_pick_1s)|(rule_accept_1s)
     driver_summary["speedy_driving"] = rule_driving_speed
     driver_summary["repeat_pick"] = rule_repeat_pick
     driver_summary["far_accept"] = rule_accept_far
@@ -902,10 +917,13 @@ def process(
             "far_accept%",
             "pct_p_far_accept",
             "repeat_pick",
-            "ct_orders",
+            "ct_orders_pick",
             "ct_repeat_pick",
             "p_repeat_pick",
             "pct_p_repeat_pick",
+            "ct_orders_complete",
+            "ct_orders_release",
+            "ct_orders_cancel",
         ]
     ]
     airport_carry = order_events_check[
@@ -1083,28 +1101,31 @@ def process(
             "far_accept%": "far_accept_p",
             "pct_p_far_accept": "far_accept_p_pct",
             "repeat_pick": "repeat_pick",
-            "ct_orders": "orders_ct",
+            "ct_orders_pick": "orders_pick_ct",
             "ct_repeat_pick": "repeat_pick_ct",
             "p_repeat_pick": "repeat_pick_p",
             "pct_p_repeat_pick": "repeat_pick_p_pct",
+            "ct_orders_complete": "orders_complete_ct",
+            "ct_orders_release": "orders_release_ct",
+            "ct_orders_cancel": "orders_cancel_ct",
         }
     )
 
-    driver_summary = driver_summary.dropna(subset=["driver_id"])
+    driver_summary = driver_summary.dropna(subset = ['driver_id'])
 
-    driver_summary["cheat_score"] = [
-        int(a) + int(b) + int(c) + int(d) + int(e) + int(f)
-        for a, b, c, d, e, f in zip(
-            driver_summary["fake_gps"],
-            driver_summary["repeat_gps"],
-            driver_summary["pick_accept_bot"],
-            driver_summary["speedy_driving"],
-            driver_summary["far_accept"],
-            driver_summary["repeat_pick"],
-        )
-    ]
+    driver_summary['country'] = country.upper()
+    driver_summary["cheat_score"] = [int(a)+int(b)+int(c)+int(d)+int(e)+int(f) 
+                                    for a,b,c,d,e,f in 
+                                    zip(driver_summary["fake_gps"],
+                                        driver_summary["repeat_gps"],
+                                        driver_summary["pick_accept_bot"],
+                                        driver_summary["speedy_driving"],
+                                        driver_summary["far_accept"],
+                                        driver_summary["repeat_pick"]
+                                        )
+                                    ]
 
-    int_col_list = [
+    int_col_list = [        
         "gps_ct",
         "fake_gps_ct",
         "repeat_gps_ct",
@@ -1116,8 +1137,12 @@ def process(
         "accept_1s_ct",
         "speedy_driving_ct",
         "far_accept_ct",
-        "orders_ct",
+        "orders_pick_ct",
         "repeat_pick_ct",
+        "orders_complete_ct",
+        "orders_release_ct",
+        "orders_cancel_ct",
+        
     ]
     float_col_list = [
         "fake_gps_p",
@@ -1136,11 +1161,7 @@ def process(
         "repeat_pick_p_pct",
     ]
 
-    driver_summary = fill_format(driver_summary, int_col_list, 0, int)
-    driver_summary = fill_format(
-        driver_summary, float_col_list, float(0), float
-    )
-    del order_output["date"]
-    del order_output["country"]
-    del driver_summary["dt"]
+    driver_summary = fill_format(driver_summary,int_col_list,0,int)
+    driver_summary = fill_format(driver_summary,float_col_list,float(0),float)
+
     return driver_summary, order_output
