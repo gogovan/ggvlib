@@ -517,6 +517,15 @@ def get_pick_accept_cal(df: pd.DataFrame) -> pd.DataFrame:
 
     return output
 
+def get_avg_time_pick_accept(df: pd.DataFrame) -> pd.DataFrame:
+
+    pick = df[df['event_type_cd']==20].group_by(['driver'])
+    pick_driving = df[df['event_type_cd']==22]
+    accept = df[df['event_type_cd']==2]
+
+    return_df = 0
+
+    return return_df
 
 def get_driving_speed(df: pd.DataFrame, tsl: int, tdl: int) -> pd.DataFrame:
     df2 = (
@@ -776,6 +785,10 @@ def process_cheating_upload(date: datetime.date, country: str):
         order_events_check["actor_id"].astype(str).str.replace("nan", "")
     )
     order_events = get_pick_accept_cal(order_events_check)
+
+    print(order_events)
+    # avg_time = order_events['']
+
     driving_speed = get_driving_speed(
         order_events_check, tsl=TRAVEL_SPEED_LIMIT, tdl=TRAVEL_DISTANCE_LIMIT
     )
@@ -884,6 +897,7 @@ def process_cheating_upload(date: datetime.date, country: str):
     driver_summary["speedy_driving"] = rule_driving_speed
     driver_summary["repeat_pick"] = rule_repeat_pick
     driver_summary["far_accept"] = rule_accept_far
+    print(driver_summary.columns)
     driver_summary = driver_summary[
         [
             "driver_id",
