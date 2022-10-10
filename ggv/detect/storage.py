@@ -7,6 +7,7 @@ import os
 def upload_df(df: pd.DataFrame, path: str) -> None:
     b = os.environ["BUCKET"]
     logger.info(f"Loading bucket: {b}")
+    # client = storage.Client.from_service_account_json("~.//bq-service-account.json")
     client = storage.Client()
     bucket = client.bucket(b)
     bucket.blob(path).upload_from_string(df.to_csv(index=False), "text/csv")
