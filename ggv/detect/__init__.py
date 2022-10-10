@@ -66,7 +66,7 @@ def get_driver_gps_bq(date: datetime.date, country: str) -> pd.DataFrame:
       END
         ) AS speed_in_m_per_s
     FROM
-      `gogox-data-science-non-prod.raw.streaming_data_{country}_driver_details`
+      `gogox-data-science-non-prod.raw.{country}_db_streaming_driver_details`
     WHERE
       DATE(location_updated_at) = DATE('{date}')
       """

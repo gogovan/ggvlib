@@ -5,11 +5,12 @@ from ggv.detect.storage import upload_df
 
 
 def run_driver_cheat_detection(message: dict = {}, event: dict = {}) -> None:
-    # countries = os.environ["COUNTRIES"].split("|")
-    countries = ['hk','vn','sg']
+    countries = os.environ["COUNTRIES"].split("|")
+    # countries = ['sg','vn']
 
     # base = datetime.utcnow().date()-timedelta(days = 80)
     # date_list = [str(base + timedelta(days=x*4)) for x in range(20)]
+    # date_list = ['2022-09-25','2022-09-29','2022-10-03','2022-10-07']
     # for yesterday in date_list:
     yesterday = str(datetime.utcnow().date() - timedelta(days=1))
     for c in countries:
