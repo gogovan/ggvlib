@@ -249,6 +249,7 @@ def get_speedy_drivers(
 def get_speedy_summary(
     speedy_drivers: pd.DataFrame, repeat_gps: pd.DataFrame, gps: pd.DataFrame
 ) -> pd.DataFrame:
+
     speedy_drivers["driver_id"] = speedy_drivers["driver_id"].astype(int)
     count_of_speedy = (
         speedy_drivers.groupby(["driver_id", "date"])
@@ -340,7 +341,7 @@ def get_speedy_summary(
 def get_pick_accept_cal(df: pd.DataFrame) -> pd.DataFrame:
     df = df[df["actor_type"] == "Driver"]
     df1 = df[["order_request_id", "driver"]].drop_duplicates()
-
+    print(df)
     temp = (
         df[(df["event_type_cd"] == 22) | (df["event_type_cd"] == 20)]
         .groupby(["order_request_id", "driver"])
@@ -357,23 +358,23 @@ def get_pick_accept_cal(df: pd.DataFrame) -> pd.DataFrame:
     )
     temp2 = (
         df[(df["event_type_cd"] == 20)]
-        .groupby(["order_request_id", "driver"])
+        .groupby(["order_request_id", "driver"])["time_diff_in_ms"]
         .mean()
-        .reset_index()[["order_request_id", "driver", "time_diff_in_ms"]]
+        .reset_index()
         .rename(columns={"time_diff_in_ms": "avg_time_pick"})
     )
     temp3 = (
         df[(df["event_type_cd"] == 22)]
-        .groupby(["order_request_id", "driver"])
+        .groupby(["order_request_id", "driver"])["time_diff_in_ms"]
         .mean()
-        .reset_index()[["order_request_id", "driver", "time_diff_in_ms"]]
+        .reset_index()
         .rename(columns={"time_diff_in_ms": "avg_time_pick_driving"})
     )
     temp4 = (
         df[(df["event_type_cd"] == 2)]
-        .groupby(["order_request_id", "driver"])
+        .groupby(["order_request_id", "driver"])["time_diff_in_ms"]
         .mean()
-        .reset_index()[["order_request_id", "driver", "time_diff_in_ms"]]
+        .reset_index()
         .rename(columns={"time_diff_in_ms": "avg_time_accept"})
     )
     temp5 = (
@@ -437,7 +438,7 @@ def get_pick_accept_cal(df: pd.DataFrame) -> pd.DataFrame:
             temp,
             how="left",
             left_on=["driver", "order_request_id"],
-            right_on=["driver", "order_request_id"],
+            right_on=["driver",  "order_request_id"],
         )
     except IndexError:
         output["ct_pick"] = 0
@@ -518,7 +519,6 @@ def get_pick_accept_cal(df: pd.DataFrame) -> pd.DataFrame:
         )
     except IndexError:
         output["ct_<=2s_accept"] = 0
-
 
     try :
         output = pd.merge(
