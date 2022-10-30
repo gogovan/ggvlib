@@ -1,3 +1,5 @@
+*.whl
+*.tar.gz
 *.pyc
 *.env
 *.json
