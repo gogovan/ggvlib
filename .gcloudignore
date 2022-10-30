@@ -1,0 +1,7 @@
+*.sh
+*.pyc
+*.json
+*.env
+*.lock
+*.git
+*.log
