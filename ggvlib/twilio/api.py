@@ -3,8 +3,11 @@ import json
 import urllib.parse
 import requests
 import os
+import aiohttp
+import asyncio
 from typing import Dict, List, Literal
 from pydantic import BaseModel
+from ggvlib.logging import logger
 
 
 class ContentType(BaseModel):
@@ -29,19 +32,18 @@ class ContentCreateRequest(BaseModel):
         variables (Dict[str, str]): Variables in a dict format
         types Dict[str, Dict[str, str]]: The type of content to create
         language (str): The content language (defaults to 'en')
-    Example:
-        >> new_content = ContentRequest(
-        friendly_name="test",
-        variables={"1": "name", "2": "11"},
-        types=[
-            ContentType(
-                category="text",
-                body="Hi {{1}}, \n Your flight will depart from gate {{2}}.",
-                actions=[{"id": "test_1", "title": "action_1"}]
-            )
-        ],
-        language="en",
-    )
+    >>> new_content = ContentRequest(
+    ... friendly_name="test",
+    ... variables={"1": "name", "2": "11"},
+    ... types=[
+    ...     ContentType(
+    ...         category="text",
+    ...         body="Hi {{1}}, Your flight will depart from gate {{2}}.",
+    ...         actions=[{"id": "test_1", "title": "action_1"}]
+    ...     )
+    ... ],
+    ... language="en",
+    ... )
     """
 
     friendly_name: str
@@ -129,13 +131,13 @@ class Client:
 
     @classmethod
     def from_env(cls) -> "Client":
-        if not (api_key := os.getenv("twilio_auth_token")):
+        if not (api_key := os.getenv("TWILIO_AUTH_TOKEN")):
             raise ValueError(
-                "'twilio_auth_token' is not set as an environment variable"
+                "'TWILIO_AUTH_TOKEN' is not set as an environment variable"
             )
-        if not (account_sid := os.getenv("twilio_account_sid")):
+        if not (account_sid := os.getenv("TWILIO_ACCOUNT_SID")):
             raise ValueError(
-                "'twilio_account_sid' is not set as an environment variable"
+                "'TWILIO_ACCOUNT_SID' is not set as an environment variable"
             )
         return cls(account_sid, api_key)
 
@@ -147,7 +149,7 @@ class MessagingApiClient(Client):
         """Send content via a messaging service using the Content API
 
         Args:
-            payload (ContentSendRequest): A request containing the information about what
+            payload (ContentSendRequest): A request containing information about what
             content to send
 
         Raises:
@@ -167,6 +169,74 @@ class MessagingApiClient(Client):
             raise Exception(
                 f"Client did not accept request: {response.json()}"
             )
+
+    def async_send_content(
+        self, message_batch: List[ContentSendRequest]
+    ) -> List[aiohttp.ClientResponse]:
+        """A wrapper method for _async_send_content
+
+        Args:
+            message_batch (List[ContentSendRequest]): A list of requests containing information about what
+            content to send
+
+        Returns:
+            List[aiohttp.ClientResponse]: A list of responses from the client
+        """
+        loop = asyncio.get_event_loop()
+        return loop.run_until_complete(
+            self._async_send_content(message_batch=message_batch)
+        )
+
+    async def _async_send_content(
+        self, message_batch: List[ContentSendRequest]
+    ) -> List[aiohttp.ClientResponse]:
+        """Send content asynchronously via a messaging service using the Content API
+
+        Args:
+            message_batch (List[ContentSendRequest]): A list of requests containing information about what
+            content to send
+
+        Returns:
+            List[aiohttp.ClientResponse]: A list of responses from the client
+        """
+        tasks = []
+        async with aiohttp.ClientSession(
+            headers=self.form_headers, trust_env=True
+        ) as session:
+            for request in message_batch:
+                tasks.append(
+                    self._post_async(session=session, payload=request)
+                )
+            response_data = await asyncio.gather(*tasks)
+            await session.close()
+            return response_data
+
+    async def _post_async(
+        self, session: aiohttp.ClientSession, payload: ContentSendRequest
+    ) -> aiohttp.ClientResponse:
+        """_summary_
+
+        Args:
+            session (aiohttp.ClientSession): _description_
+            payload (ContentSendRequest): _description_
+
+        Returns:
+            aiohttp.ClientResponse: _description_
+        """
+        body = urllib.parse.urlencode(payload.to_dict())
+        post_url = f"{self.api_base_url}/{self.account_sid}/Messages.json"
+        try:
+            async with session.post(
+                url=post_url,
+                data=body,
+            ) as response:
+                await response.read()
+                if response.status == 500:
+                    logger.error(response)
+                return response
+        except Exception as e:
+            logger.error(e)
+            return body
 
 
 class ContentApiClient(Client):
