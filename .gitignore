@@ -5,3 +5,5 @@
 *.json
 *.lock
 *.log
+docs/_build/
+local.*
