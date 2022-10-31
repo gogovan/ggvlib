@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ggvlib"
-version = "0.1.4"
+version = "0.1.6"
 description = ""
 authors = ["Adam Hoffstein <adam.hoffstein@gogox.com>"]
 
@@ -15,10 +15,14 @@ google-cloud-bigquery-storage = "^2.16.2"
 db-dtypes = "^1.0.4"
 google-api-python-client = "^2.65.0"
 pydantic = "^1.10.2"
+aiohttp = "^3.8.3"
+sphinx-autoapi = "^2.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
 black = "^22.10.0"
+Sphinx = "^5.3.0"
+sphinx-rtd-theme = "^1.0.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
