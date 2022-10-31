@@ -1,6 +1,6 @@
 import gzip
-from io import StringIO
 import json
+from io import StringIO
 from typing import Any, Dict, List, Union
 from ggvlib.logging import logger
 
@@ -16,7 +16,7 @@ def nested_objects_to_string(data: dict) -> dict:
         dict: The resulting dictionary
     """
     for k, v in data.items():
-        if not isinstance(v, str):
+        if not (isinstance(v, str) or isinstance(v, int)):
             data.update({k: json.dumps(v)})
     return data
 
