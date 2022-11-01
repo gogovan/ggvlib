@@ -5,9 +5,10 @@ import requests
 import os
 import aiohttp
 import asyncio
-from typing import Dict, List, Literal
+from typing import Dict, List, Literal, Optional
 from pydantic import BaseModel
 from ggvlib.logging import logger
+from ggvlib.twilio.parsing import to_form_field
 
 
 class ContentType(BaseModel):
@@ -91,6 +92,36 @@ class ContentSendRequest(BaseModel):
         return content
 
 
+class MessagingServiceUpdateRequest(BaseModel):
+    sid: str
+    friendly_name: Optional[str]
+    inbound_request_url: Optional[str]
+    inbound_method: Optional[str]
+    fallback_url: Optional[str]
+    fallback_method: Optional[str]
+    status_callback: Optional[str]
+    sticky_sender: Optional[bool]
+    mms_converter: Optional[bool]
+    smart_encoding: Optional[bool]
+    scan_message_content: Optional[bool]
+    fallback_to_long_code: Optional[bool]
+    area_code_geomatch: Optional[bool]
+    validity_period: Optional[int]
+    synchronous_validation: Optional[bool]
+    usecase: Optional[str]
+    use_inbound_webhook_on_number: Optional[bool]
+
+    def to_dict(cls) -> dict:
+        d = cls.dict()
+        content = {to_form_field(k): v for k, v in d.items() if v}
+        if list(content.keys()) == ["Sid"]:
+            required = [k for k in d.keys() if k != "sid"]
+            raise ValueError(
+                f"One of the following values is required: {required}"
+            )
+        return content
+
+
 class Client:
     """A base client for interacting with Twilio"""
 
@@ -141,6 +172,77 @@ class Client:
             )
         return cls(account_sid, api_key)
 
+    def post_urlencoded_form(
+        self, url: str, accept_status_code: int, payload: BaseModel
+    ) -> dict:
+        """_summary_
+
+        Args:
+            url (str): _description_
+            accept_status_code (int): _description_
+            payload (BaseModel): _description_
+
+        Raises:
+            Exception: _description_
+
+        Returns:
+            dict: _description_
+        """
+        response = requests.post(
+            url=url,
+            headers=self.form_headers,
+            data=urllib.parse.urlencode(payload.to_dict()),
+        )
+        if response.status_code == accept_status_code:
+            return response.json()
+        else:
+            raise Exception(
+                f"Client did not accept request: {response.json()}"
+            )
+
+
+class MessagingServiceApiClient(Client):
+    api_version = 1
+    api_base_url = f"https://messaging.twilio.com/v{api_version}/Services"
+
+    def get_all(self) -> dict:
+        """_summary_
+
+        Returns:
+            dict: _description_
+        """
+        return requests.get(
+            url=self.api_base_url, headers=self.json_headers
+        ).json()
+
+    def get(self, service_sid: str) -> dict:
+        """_summary_
+
+        Args:
+            service_sid (str): _description_
+
+        Returns:
+            dict: _description_
+        """
+        return requests.get(
+            url=f"{self.api_base_url}/{service_sid}", headers=self.json_headers
+        ).json()
+
+    def update(self, payload: MessagingServiceUpdateRequest) -> dict:
+        """_summary_
+
+        Args:
+            payload (MessagingServiceUpdateRequest): _description_
+
+        Returns:
+            dict: _description_
+        """
+        return self.post_urlencoded_form(
+            url=f"{self.api_base_url}/{payload.sid}",
+            payload=payload,
+            accept_status_code=200,
+        )
+
 
 class MessagingApiClient(Client):
     api_base_url = "https://api.twilio.com/2010-04-01/Accounts"
@@ -158,17 +260,11 @@ class MessagingApiClient(Client):
         Returns:
             dict: Information about the sent message, such as whether or not it was accepted
         """
-        response = requests.post(
+        return self.post_urlencoded_form(
             url=f"{self.api_base_url}/{self.account_sid}/Messages.json",
-            headers=self.form_headers,
-            data=urllib.parse.urlencode(payload.to_dict()),
+            payload=payload,
+            accept_status_code=201,
         )
-        if response.status_code == 201:
-            return response.json()
-        else:
-            raise Exception(
-                f"Client did not accept request: {response.json()}"
-            )
 
     def async_send_content(
         self, message_batch: List[ContentSendRequest]
