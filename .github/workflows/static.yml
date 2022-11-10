@@ -31,7 +31,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Sphinx
-        run: sudo apt-get install python3-sphinx && pip3 install sphinx-autoapi
+        run: sudo apt-get install python3-sphinx
+      - name: Install python dependencies
+        run: pip3 install sphinx-autoapi sphinx_rtd_theme
       - name: Build pages
         run: cd docs && make html
       - name: Setup Pages
