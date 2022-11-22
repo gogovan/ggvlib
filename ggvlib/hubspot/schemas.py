@@ -28,17 +28,17 @@ class Contact(BaseModel):
         ValueError: Invalid values
 
     >>> contact = Contact(
-            email="a.person@gogox.com",
-            properties=[
-                {"property": "include_in_call_list", "value": False},
-            ],
-        )
+    ...     email="a.person@gogox.com",
+    ...     properties=[
+    ...         {"property": "include_in_call_list", "value": False},
+    ...     ],
+    ... )
     >>> another_contact = Contact(
-            vid=123,
-            properties=[
-                {"property": "include_in_call_list", "value": False},
-            ],
-        )
+    ...     vid=123,
+    ...     properties=[
+    ...         {"property": "include_in_call_list", "value": False},
+    ...     ],
+    ... )
     """
 
     vid: Optional[str] = None

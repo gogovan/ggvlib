@@ -272,21 +272,21 @@ class Client:
         Args:
             contacts (List[Contact]): A list of Hubspot contacts
         >>> new_contacts = [
-                Contact(
-                    email="a.person@gogox.com",
-                    properties=[
-                        {"property": "include_in_call_list", "value": False},
-                    ],
-                ),
-                Contact(
-                    email="another.person@gogox.com",
-                    properties=[
-                        {"property": "include_in_gge_call_list", "value": True},
-                        {"property": "firstname", "value": "Another"},
-                        {"property": "lastname", "value": "Person"},
-                    ],
-                ),
-            ]
+        ...        Contact(
+        ...            email="a.person@gogox.com",
+        ...            properties=[
+        ...                {"property": "include_in_call_list", "value": False},
+        ...            ],
+        ...        ),
+        ...        Contact(
+        ...            email="another.person@gogox.com",
+        ...            properties=[
+        ...                {"property": "include_in_gge_call_list", "value": True},
+        ...                {"property": "firstname", "value": "Another"},
+        ...                {"property": "lastname", "value": "Person"},
+        ...            ],
+        ...        ),
+        ...    ]
         """
         for contact_batch in list(chunks(contacts, 1000)):
             logger.info(f"Updating batch of {len(contact_batch)} contact(s)")
