@@ -1,6 +1,7 @@
 *.whl
 *.tar.gz
 *.pyc
+*.csv
 *.env
 *.json
 *.lock
