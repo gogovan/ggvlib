@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ggvlib"
-version = "0.2.1"
+version = "0.2.2"
 description = ""
 authors = ["Adam Hoffstein <adam.hoffstein@gogox.com>"]
 
@@ -19,6 +19,7 @@ aiohttp = "^3.8.3"
 google-cloud-secret-manager = "^2.12.6"
 google-crc32c = "^1.5.0"
 google-cloud-scheduler = "^2.7.3"
+jsonschema = "^4.17.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
@@ -33,3 +34,5 @@ python-dotenv = "^0.21.0"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry_bumpversion.file."ggvlib/__init__.py"]

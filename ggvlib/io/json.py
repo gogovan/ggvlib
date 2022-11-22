@@ -88,6 +88,20 @@ def write_nl_json_to_stream(data: List[dict]) -> StringIO:
     return f
 
 
+def write_json_to_file(
+    data: Union[List[dict], dict], output_file: str
+) -> None:
+    """Write a list of dictionaries or a single dictionary to a JSON
+    file
+
+    Args:
+        data (Union[List[dict], dict]): A list of dictionaries or a single dictionary
+        output_file (str): The output file path
+    """
+    with open(output_file, "w") as f:
+        f.write(json.dumps(data))
+
+
 def write_nl_json_to_file(data: List[dict], output_file: str) -> None:
     """Write a list of dictionaries as new line deliminated JSON
     as a text file
