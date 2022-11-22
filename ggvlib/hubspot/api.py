@@ -8,7 +8,7 @@ from ggvlib.parsing import chunks
 
 
 class Client:
-    """A base client for interacting with the Hubspot Legacy API
+    """A base client for interacting with the Hubspot Legacy API.
     Since they don't have Contact List integration for their new API, we'll have
     to use this
     """
