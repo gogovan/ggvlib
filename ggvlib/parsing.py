@@ -1,4 +1,9 @@
 from typing import Generator, List
+from datetime import datetime
+
+
+def datetime_to_millis(dt: datetime) -> int:
+    return int(dt.timestamp() * 1000)
 
 
 def flatten(l: list) -> list:

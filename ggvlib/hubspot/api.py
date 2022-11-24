@@ -1,10 +1,11 @@
 import json
 import os
 import requests
+from datetime import datetime, timedelta
 from typing import List
 from ggvlib.logging import logger
 from ggvlib.hubspot.schemas import Contact
-from ggvlib.parsing import chunks
+from ggvlib.parsing import chunks, datetime_to_millis
 
 
 class Client:
@@ -275,6 +276,74 @@ class Client:
         else:
             logger.error(response.json())
             raise RuntimeError(response.status_code)
+
+    def get_calls_after(self, after: datetime) -> List[dict]:
+        """Returns all calls after a certain datetime
+
+        Args:
+            after (datetime): The starting datetime in the local timezone
+
+        Returns:
+            dict: A list of calls
+        """
+
+        body_args = {
+            "filterGroups": [
+                {
+                    "filters": [
+                        {
+                            "propertyName": "hs_timestamp",
+                            "operator": "GTE",
+                            "value": datetime_to_millis(after),
+                        }
+                    ]
+                }
+            ],
+            "properties": [
+                "hs_call_disposition",
+                "hs_call_title",
+                "hs_call_to_number",
+            ],
+            "limit": 100,
+        }
+        return self._paginate_crm_list(
+            url=f"{self.api_base_url}/crm/v3/objects/calls/search",
+            body_args=body_args,
+        )
+
+    def _paginate_crm_list(self, url: str, body_args: dict) -> List[dict]:
+        """Paginate through a list of reponse pages
+
+        Args:
+            url (str): The url to send a get request to
+            body_args (dict): The body info to send along with the request
+
+        Returns:
+            List[dict]: A list of fetched responses
+        """
+        after = 0
+        failures = 0
+        results = []
+        while True:
+            body_args.update({"after": after})
+            response = requests.post(
+                url,
+                headers=self.json_header,
+                data=json.dumps(body_args),
+            )
+            if response.status_code == 200:
+                response_data = response.json()
+                results.extend(response_data["results"])
+                if paging := response_data.get("paging"):
+                    after = paging["next"]["after"]
+                else:
+                    break
+            else:
+                failures += 1
+                logger.error(response.json())
+                if failures > 3:
+                    break
+        return results
 
     def create_or_update_contact(self, contact: Contact) -> dict:
         """Create or update a Contact
