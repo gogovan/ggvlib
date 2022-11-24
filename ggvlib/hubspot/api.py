@@ -207,6 +207,39 @@ class Client:
             offset_key="vid-offset",
         )
 
+    def get_contact_batch(
+        self, emails: List[str], properties: List[str] = None
+    ) -> List[dict]:
+        """Fetch a list of contact dicts by email in batches of 100
+
+        Args:
+            emails (List[str]): The emails of the contacts to fetch
+            properties (List[str]): The list of properties to fetch for the contact
+
+        Returns:
+            List[dict]: A list of contacts
+        """
+        responses = []
+        url = f"{self.api_base_url}/contacts/v1/contact/emails/batch"
+        if properties:
+            properties_query = "&property=".join(properties)
+            url = f"{url}?property={properties_query}"
+        for email_batch in list(chunks(emails, 100)):
+            logger.info(f"Fetching batch of {len(email_batch)} contact(s)")
+            response = requests.get(
+                f"{url}?email={'&email='.join(email_batch)}",
+                headers=self.auth_header,
+            )
+            if response.status_code != 200:
+                logger.error(response)
+            else:
+                response_json = response.json()
+                formatted_json = [
+                    response_json[key] for key in response_json.keys()
+                ]
+                responses.extend(formatted_json)
+        return responses
+
     def add_contact_list_contacts(
         self,
         contact_list_id: str,
