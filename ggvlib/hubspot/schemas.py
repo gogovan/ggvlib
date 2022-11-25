@@ -16,6 +16,20 @@ PROPERTY_ARRAY_SCHEMA = {
 }
 
 
+CRM_FILTER_ARRAY_SCHEMA = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "propertyName": {"type": "string"},
+            "operator": {"type": "string"},
+            "value": {},
+        },
+        "required": ["propertyName", "operator", "value"],
+    },
+}
+
+
 class Contact(BaseModel):
     """A schema for updating contacts in the Hubspot API. You can provide either an email or vid
     along with a list of properties

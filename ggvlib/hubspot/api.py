@@ -3,8 +3,9 @@ import os
 import requests
 from datetime import datetime, timedelta
 from typing import List
+from jsonschema import validate
 from ggvlib.logging import logger
-from ggvlib.hubspot.schemas import Contact
+from ggvlib.hubspot.schemas import Contact, CRM_FILTER_ARRAY_SCHEMA
 from ggvlib.parsing import chunks, datetime_to_millis
 
 
@@ -278,29 +279,47 @@ class Client:
             raise RuntimeError(response.status_code)
 
     def get_calls_after(
-        self, after: datetime, properties: List[str]
+        self,
+        after: datetime,
+        properties: List[str] = [],
+        filters: List[dict] = [],
     ) -> List[dict]:
         """Returns all calls after a certain datetime
 
         Args:
-            after (datetime): The starting datetime in the local timezone
+            after (datetime): The datetime to return calls after
+            properties (List[str], optional): A list of properties. Defaults to [].
+            filters (List[dict], optional): A list of filters. Defaults to [].
 
         Returns:
-            dict: A list of calls
+            List[dict]: A list of calls
         """
 
+        filters.append(
+            {
+                "propertyName": "hs_timestamp",
+                "operator": "GTE",
+                "value": datetime_to_millis(after),
+            }
+        )
+
+        return self.get_calls(filters=filters, properties=properties)
+
+    def get_calls(
+        self, filters: List[dict] = [], properties: List[str] = []
+    ) -> List[dict]:
+        """Returns calls
+
+        Args:
+            filters (List[dict]): A list of filters
+            properties (List[str]): A list of properties to return
+
+        Returns:
+            List[dict]: A list of calls
+        """
+        validate(filters, CRM_FILTER_ARRAY_SCHEMA)
         body_args = {
-            "filterGroups": [
-                {
-                    "filters": [
-                        {
-                            "propertyName": "hs_timestamp",
-                            "operator": "GTE",
-                            "value": datetime_to_millis(after),
-                        }
-                    ]
-                }
-            ],
+            "filterGroups": [{"filters": filters}],
             "properties": properties,
             "limit": 100,
         }
