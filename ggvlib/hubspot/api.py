@@ -277,7 +277,9 @@ class Client:
             logger.error(response.json())
             raise RuntimeError(response.status_code)
 
-    def get_calls_after(self, after: datetime) -> List[dict]:
+    def get_calls_after(
+        self, after: datetime, properties: List[str]
+    ) -> List[dict]:
         """Returns all calls after a certain datetime
 
         Args:
@@ -299,11 +301,7 @@ class Client:
                     ]
                 }
             ],
-            "properties": [
-                "hs_call_disposition",
-                "hs_call_title",
-                "hs_call_to_number",
-            ],
+            "properties": properties,
             "limit": 100,
         }
         return self._paginate_crm_list(
