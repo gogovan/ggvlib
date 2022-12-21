@@ -7,4 +7,4 @@
 *.lock
 *.log
 docs/_build/
-local.*
+local*.*

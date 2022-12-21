@@ -26,11 +26,11 @@ class Client:
         self.access_token = access_token
 
     @property
-    def auth_header(self) -> str:
+    def auth_header(self) -> dict:
         return {"Authorization": f"Bearer {self.access_token}"}
 
     @property
-    def json_header(self) -> str:
+    def json_header(self) -> dict:
         return {**self.auth_header, **{"Content-Type": "application/json"}}
 
     @classmethod
@@ -79,6 +79,72 @@ class Client:
             else:
                 raise RuntimeError(response.status_code)
         return all_results
+
+    def _paginate_crm_list(
+        self, url: str, body_args: dict, method: str = "POST"
+    ) -> List[dict]:
+        """Paginate through a list of reponse pages
+
+        Args:
+            url (str): The url to send a get request to
+            body_args (dict): The body info to send along with the request
+
+        Returns:
+            List[dict]: A list of fetched responses
+        """
+        after = 0
+        failures = 0
+        results = []
+        while True:
+            body_args.update({"after": after})
+            if method == "POST":
+                response = requests.post(
+                    url,
+                    headers=self.json_header,
+                    data=json.dumps(body_args),
+                )
+            elif method == "GET":
+                response = requests.get(
+                    url,
+                    headers=self.json_header,
+                    params=body_args,
+                )
+            else:
+                raise ValueError("Method must be 'POST' or 'GET'")
+            if response.status_code == 200:
+                response_data = response.json()
+                if info := response_data.get("results"):
+                    results.extend(info)
+                else:
+                    results.append(response_data)
+                if paging := response_data.get("paging"):
+                    after = paging["next"]["after"]
+                else:
+                    break
+            else:
+                failures += 1
+                logger.error(response.json())
+                if failures > 3:
+                    break
+        return results
+
+    def _put(self, url: str) -> dict:
+        response = requests.put(url, headers=self.auth_header)
+        if response.status_code <= 400:
+            return response.json()
+        else:
+            raise RuntimeError(response.content)
+
+    def _post(self, url: str, body_args: dict) -> dict:
+        response = requests.post(
+            url,
+            headers=self.json_header,
+            data=json.dumps(body_args),
+        )
+        if response.status_code <= 400:
+            return response.json()
+        else:
+            raise RuntimeError(response.content)
 
     def get_object_properties(self, object_type: str) -> List[dict]:
         """List all properties for an object
@@ -156,6 +222,120 @@ class Client:
             response_key="lists",
             offset_key="offset",
         )
+
+    def associate_custom_object(
+        self,
+        object_type: str,
+        object_id: str,
+        to_object_type: str,
+        to_object_id: str,
+        association_type: str,
+    ) -> dict:
+        """_summary_
+
+        Args:
+            object_type (str): _description_
+            object_id (str): _description_
+            to_object_type (str): _description_
+            to_object_id (str): _description_
+            association_type (str): _description_
+
+        Returns:
+            dict: _description_
+        """
+        return self._put(
+            url=(
+                f"{self.api_base_url}/crm/v3/objects/{object_type}/{object_id}/"
+                f"associations/{to_object_type}/{to_object_id}/{association_type}"
+            )
+        )
+
+    def create_custom_object_import(
+        self, file_path: str, import_request: dict
+    ) -> dict:
+        """_summary_
+
+        Args:
+            file_path (str): _description_
+            import_request (dict): _description_
+
+        Returns:
+            dict: _description_
+        """
+        file = {"file": open(file_path, "rb")}
+        body_args = {"import_request"}
+        response = requests.post(
+            f"{self.api_base_url}/crm/v3/imports",
+            headers=self.auth_header,
+            files=file,
+            data=body_args,
+        )
+
+    def create_custom_object_batch(
+        self, object_type: str, inputs: List[dict]
+    ) -> dict:
+        """_summary_
+
+        Args:
+            object_type (str): _description_
+            inputs (List[dict]): _description_
+
+        Returns:
+            dict: _description_
+        """
+        return self._post(
+            url=f"{self.api_base_url}/crm/v3/objects/{object_type}/batch/create",
+            body_args={"inputs": inputs},
+        )
+
+    def get_custom_object_batch(
+        self, object_type: str, inputs: List[dict], properties: List[str] = []
+    ) -> List[dict]:
+        """_summary_
+
+        Args:
+            object_type (str): _description_
+            inputs (List[dict]): _description_
+            properties (List[str], optional): _description_. Defaults to [].
+
+        Returns:
+            List[dict]: _description_
+        """
+        body_args = {"properties": properties, "inputs": inputs}
+        return self._paginate_crm_list(
+            url=f"{self.api_base_url}/crm/v3/objects/{object_type}/batch/read",
+            body_args=body_args,
+            method="POST",
+        )
+
+    def get_custom_object_schema(
+        self, object_type: str = None, properties: List[str] = []
+    ) -> List[dict]:
+        """Returns calls
+
+        Args:
+            filters (List[dict]): A list of filters
+            properties (List[str]): A list of properties to return
+
+        Returns:
+            List[dict]: A list of calls
+        """
+        body_args = {
+            "properties": properties,
+            "limit": 100,
+        }
+        if object_type:
+            return self._paginate_crm_list(
+                url=f"{self.api_base_url}/crm/v3/schemas/{object_type}",
+                body_args=body_args,
+                method="GET",
+            )
+        else:
+            return self._paginate_crm_list(
+                url=f"{self.api_base_url}/crm/v3/schemas/",
+                body_args=body_args,
+                method="GET",
+            )
 
     def get_contact_list(self, contact_list_id: int) -> dict:
         """Get information for a specific contact list by id
@@ -327,40 +507,6 @@ class Client:
             url=f"{self.api_base_url}/crm/v3/objects/calls/search",
             body_args=body_args,
         )
-
-    def _paginate_crm_list(self, url: str, body_args: dict) -> List[dict]:
-        """Paginate through a list of reponse pages
-
-        Args:
-            url (str): The url to send a get request to
-            body_args (dict): The body info to send along with the request
-
-        Returns:
-            List[dict]: A list of fetched responses
-        """
-        after = 0
-        failures = 0
-        results = []
-        while True:
-            body_args.update({"after": after})
-            response = requests.post(
-                url,
-                headers=self.json_header,
-                data=json.dumps(body_args),
-            )
-            if response.status_code == 200:
-                response_data = response.json()
-                results.extend(response_data["results"])
-                if paging := response_data.get("paging"):
-                    after = paging["next"]["after"]
-                else:
-                    break
-            else:
-                failures += 1
-                logger.error(response.json())
-                if failures > 3:
-                    break
-        return results
 
     def create_or_update_contact(self, contact: Contact) -> dict:
         """Create or update a Contact
