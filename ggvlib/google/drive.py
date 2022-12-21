@@ -23,7 +23,7 @@ def upload_file(
     local_path: str,
     parent_id: str = None,
     mime_type="text/csv",
-    fields: List["str"] = ["id"],
+    fields: str = "id",
 ) -> Dict[str, str]:
     """Uploads a CSV from a local file
 
