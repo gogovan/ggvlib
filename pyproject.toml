@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ggvlib"
-version = "0.2.9"
+version = "0.2.10"
 
 description = ""
 authors = ["Adam Hoffstein <adam.hoffstein@gogox.com>"]
@@ -22,6 +22,7 @@ google-crc32c = "^1.5.0"
 google-cloud-scheduler = "^2.7.3"
 jsonschema = "^4.17.0"
 google-auth-oauthlib = "^0.8.0"
+sendgrid = "^6.9.7"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
