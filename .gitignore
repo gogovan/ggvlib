@@ -8,3 +8,4 @@
 *.log
 docs/_build/
 local*.*
+test.txt
