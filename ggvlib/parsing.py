@@ -19,7 +19,7 @@ def flatten(l: list) -> list:
 
 
 def node_map(d: dict, parent: str = None) -> List[tuple]:
-    """_summary_
+    """A recursive function to converts a nested dictionary to a list of tuples
 
     Args:
         d (dict): _description_
@@ -27,6 +27,10 @@ def node_map(d: dict, parent: str = None) -> List[tuple]:
 
     Returns:
         List[tuple]: _description_
+
+    >>> d = {"a":1, "b":{"c":2, "d":3, "e":{"f":4}}}
+    >>> node_map(d)
+    [('b.e.f', 4), ('b.c', 2), ('b.d', 3), ('a', 1)]
     """
     results = []
     for key, v in d.items():
@@ -80,3 +84,27 @@ def chunks(lst: list, n: int) -> Generator[list, None, None]:
     """
     for i in range(0, len(lst), n):
         yield lst[i : i + n]
+
+
+def millis_to_timestamp(ts: int) -> datetime:
+    """Converts milliseconds to a datetime object
+
+    Args:
+        ts (int): The milliseconds to convert
+
+    Returns:
+        datetime: A datetime object
+    """
+    return datetime.utcfromtimestamp(ts / 1000)
+
+
+def micros_to_timestamp(ts: int) -> datetime:
+    """Converts microseconds to a datetime object
+
+    Args:
+        ts (int): The microseconds to convert
+
+    Returns:
+        datetime: A datetime object
+    """
+    return datetime.utcfromtimestamp(ts / 1000000)
