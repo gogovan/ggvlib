@@ -52,7 +52,7 @@ def query(query: str) -> list[dict]:
     Returns:
         list[dict]: The results
     """
-    result = [dict(row) for row in bigquery._client().query(query)]
+    result = [dict(row) for row in _client().query(query)]
     logger.debug(f"Result: {len(result)} row(s).")
     return result
 

@@ -68,7 +68,7 @@ def get_page(
 def get_all(
     fields: List[str] = DEFAULT_FIELDS,
     page_size: int = 100,
-) -> dict:
+) -> list[dict]:
     """_summary_
 
     Args:
@@ -76,7 +76,7 @@ def get_all(
         page_size (int, optional): _description_. Defaults to 100.
 
     Returns:
-        dict: _description_
+        list[dict]: _description_
     """
     all_results: List[Dict[str, any]] = []
     next_page_token = None
