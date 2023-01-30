@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ggvlib"
-version = "0.2.14"
+version = "0.2.15"
 
 description = ""
 authors = ["Adam Hoffstein <adam.hoffstein@gogox.com>"]
