@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import List
 from ggvlib.logging import logger
@@ -8,8 +9,8 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 # You can find credentials here: https://console.cloud.google.com/apis/credentials/
 def fetch_user_creds(
     scopes: List[str],
-    cred_path: str = "token.json",
-    secret_path: str = "credentials.json",
+    cred_path: str = os.getenv("GOOGLE_TOKEN_PATH", "token.json"),
+    secret_path: str = os.getenv("GOOGLE_SECRET_PATH", "credentials.json"),
     port_no: int = 9000,
 ) -> Credentials:
     """Fetch authenticated user creds
