@@ -60,7 +60,7 @@ class Client:
             df.columns = [
                 column.lower().replace(" ", "_") for column in df.columns
             ]
-            return response
+            return df
         else:
             raise ValueError(
                 "Invalid report type. Please select from [installs_report, in_app_events_report]"
