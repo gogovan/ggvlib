@@ -5,6 +5,7 @@ import requests
 import os
 import aiohttp
 import asyncio
+from datetime import date, datetime
 from typing import Dict, List, Literal, Optional
 from pydantic import BaseModel
 from ggvlib.logging import logger
@@ -246,6 +247,57 @@ class MessagingServiceApiClient(Client):
 
 class MessagingApiClient(Client):
     api_base_url = "https://api.twilio.com/2010-04-01/Accounts"
+
+    def get_messages(
+        self,
+        date_sent: date = datetime.utcnow().date(),
+        from_number: str = None,
+        to_number: str = None,
+        page_size: int = 1000,
+    ) -> list[dict]:
+        """Return all message records for a given account, which is defined in the MessagingApiClient instance
+
+        Args:
+            from_number (str): The number the message was sent from
+            to_number (str): The number the message was sent to
+            date_sent (date): The date the message was sent
+            page_size (int): The amount of messages to return per page
+
+        Returns:
+            list[dict]: A list of messages
+        """
+        param_dict = {
+            "DateSent": date_sent,
+            "From": from_number,
+            "To": to_number,
+            "PageSize": page_size,
+        }
+        if not to_number:
+            param_dict.pop(
+                "To",
+            )
+        if not from_number:
+            param_dict.pop(
+                "From",
+            )
+        responses = []
+        r = requests.get(
+            url=f"{self.api_base_url}/{self.account_sid}/Messages.json",
+            headers=self.json_headers,
+            params=param_dict,
+        ).json()
+        responses.extend(r["messages"])
+        while True:
+            if next_page_uri := r.get("next_page_uri"):
+                r = requests.get(
+                    url=f"{self.api_base_url}/{next_page_uri.split('Accounts/')[1]}",
+                    headers=self.json_headers,
+                ).json()
+                if messages := r.get("messages"):
+                    responses.extend(messages)
+            else:
+                break
+        return responses
 
     def send_content(self, payload: ContentSendRequest) -> dict:
         """Send content via a messaging service using the Content API
