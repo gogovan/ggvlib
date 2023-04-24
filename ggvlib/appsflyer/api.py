@@ -6,7 +6,7 @@ from ggvlib.logging import logger
 
 
 class Client:
-    base_url = "https://hq.appsflyer.com/export"
+    base_url = "https://hq1.appsflyer.com/api/raw-data/export/app"
     report_types = ["installs_report", "in_app_events_report"]
     api_version = 5
 
@@ -25,7 +25,7 @@ class Client:
     def run_report(
         self, app_id: str, report_type: str, start: date, end: date
     ) -> pd.DataFrame:
-        """Runs an installs or in app events report on the AppsFlyer API
+        """Runs an 'installs' or 'in app events' report on the AppsFlyer API
 
         Args:
             app_id (str): The id of the app to download a report of
@@ -42,7 +42,6 @@ class Client:
         if report_type in self.report_types:
             logger.info(f"Running {report_type} for app_id: {app_id}")
             params = {
-                "api_token": self.api_key,
                 "from": start,
                 "to": end,
             }
@@ -52,6 +51,7 @@ class Client:
             response = requests.get(
                 report_url,
                 params=params,
+                headers={"authorization": f"Bearer {self.api_key}"},
             )
             df = pd.read_csv(
                 StringIO(response.content.decode("utf-8")),
