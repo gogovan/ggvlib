@@ -31,6 +31,7 @@ def list_files_in_directory(
 ) -> List[Dict[str, str]]:
     return (
         _service()
+        .files()
         .list(
             q=f'"{drive_folder_id}" in parents',
             pageSize=page_size,
