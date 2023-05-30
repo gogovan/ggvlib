@@ -34,7 +34,7 @@ class ContentCreateRequest(BaseModel):
         variables (Dict[str, str]): Variables in a dict format
         types Dict[str, Dict[str, str]]: The type of content to create
         language (str): The content language (defaults to 'en')
-    >>> new_content = ContentRequest(
+    >>> new_content = ContentCreateRequest(
     ... friendly_name="test",
     ... variables={"1": "name", "2": "11"},
     ... types=[
@@ -390,6 +390,26 @@ class MessagingApiClient(Client):
 class ContentApiClient(Client):
     api_version = 1
     api_base_url = f"https://content.twilio.com/v{api_version}/Content"
+
+    def submit_content_for_approval(
+        self, name: str, category: str, content_sid: str
+    ) -> dict:
+        response = requests.post(
+            url=f"{self.api_base_url}/{content_sid}/ApprovalRequests/whatsapp",
+            headers=self.json_headers,
+            data=json.dumps(
+                {
+                    "name": name,
+                    "category": category,
+                }
+            ),
+        )
+        if response.status_code == 201:
+            return response.json()
+        else:
+            raise Exception(
+                f"Client did not accept request: {response.json()}"
+            )
 
     def create_content(self, payload: ContentCreateRequest) -> dict:
         """Used for creating content with the Content API
