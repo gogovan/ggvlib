@@ -7,7 +7,7 @@ import aiohttp
 import asyncio
 from datetime import date, datetime
 from typing import Dict, List, Literal, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, root_validator
 from ggvlib.logging import logger
 from ggvlib.twilio.parsing import to_form_field
 
@@ -23,7 +23,42 @@ class ContentType(BaseModel):
         "card",
     ]
     body: str
-    actions: List[Dict[str, str]]
+    actions: Optional[List[Dict[str, str]]]
+    items: Optional[List[Dict[str, str]]]
+    button: Optional[str]
+
+    @root_validator(pre=True)
+    def content_validator(cls, values: dict):
+        if values.get("category") == "list-picker":
+            if not values.get("items"):
+                raise ValueError(
+                    "list-picker content requires an 'items' value"
+                )
+            if not values.get("button"):
+                raise ValueError(
+                    "list-picker content requires an 'button' value"
+                )
+        if values.get("category") in ("quick-reply", "call-to-action"):
+            if not values.get("actions"):
+                raise ValueError(
+                    "list-picker content requires an 'items' value"
+                )
+        return values
+
+    def to_dict(self) -> dict:
+        if self.category in ("quick-reply", "call-to-action"):
+            return {
+                "body": self.body,
+                "actions": self.actions,
+            }
+        elif self.category == "list-picker":
+            return {
+                "body": self.body,
+                "items": self.items,
+                "button": self.button,
+            }
+        else:
+            return {"body": self.body}
 
 
 class ContentCreateRequest(BaseModel):
@@ -59,10 +94,7 @@ class ContentCreateRequest(BaseModel):
             **{k: v for k, v in cls.dict().items() if k not in exclude},
             **{
                 "types": {
-                    f"twilio/{t.category}": {
-                        "body": t.body,
-                        "actions": t.actions,
-                    }
+                    f"twilio/{t.category}": t.to_dict()
                     for t in cls.content_types
                 }
             },
@@ -390,6 +422,32 @@ class MessagingApiClient(Client):
 class ContentApiClient(Client):
     api_version = 1
     api_base_url = f"https://content.twilio.com/v{api_version}/Content"
+
+    def check_approval_status(self, content_sid: str) -> dict:
+        response = requests.get(
+            url=f"{self.api_base_url}/{content_sid}/ApprovalRequests",
+            headers=self.json_headers,
+        )
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise Exception(
+                f"Client did not accept request: {response.json()}"
+            )
+
+    def delete_content(self, content_sid: str) -> None:
+        response = requests.delete(
+            url=f"{self.api_base_url}/{content_sid}",
+            headers=self.json_headers,
+        )
+        if response.status_code == 204:
+            return
+        elif response.status_code == 404:
+            logger.warning(
+                f"The requested content_sid '{content_sid}' does not exist."
+            )
+        else:
+            raise Exception(f"Client did not accept request: {str(response)}")
 
     def submit_content_for_approval(
         self, name: str, category: str, content_sid: str
