@@ -1,9 +1,13 @@
+import itertools
+import re
+import string
 from typing import Dict, List
 from ggvlib.logging import logger
 import google.auth
 from googleapiclient.discovery import build, Resource
-
+from httplib2 import Http
 import pandas as pd
+import json
 
 
 DEFAULT_SCOPES = [
@@ -40,17 +44,28 @@ def get_response_as_df(form_id) -> pd.DataFrame:
     response = get_response(form_id)
     for row in response["responses"]:
         return_list = list()
+        # print(row["createTime"])
+        # print(row["lastSubmittedTime"])
         return_list.append(row["responseId"])
         return_list.append(row["createTime"])
         return_list.append(row["lastSubmittedTime"])
         return_list.append(row["answers"])
+        for val in row["answers"].values():
+            for ans in list(val.values())[1].values():
+                if "value" not in list(ans[0].keys()):
+                    pass
+                else:
+                    return_list.append(ans[0]["value"])
+
         return_df = pd.concat([return_df, pd.DataFrame(return_list).T]).reset_index(
             drop=True
         )
-    return_df.columns = [
-        "responseId",
-        "created_time",
-        "last_submitted_time",
-        "answers",
-    ]
+    return_df = return_df.rename(
+        columns={
+            0: "response_id",
+            1: "created_time",
+            2: "last_submitted_time",
+            3: "answers",
+        }
+    )
     return return_df
