@@ -29,6 +29,9 @@ def _client() -> Resource:
         credentials=credentials,
     )
 
+def get_client() -> Resource:
+    return _client()
+
 
 def get_response(form_id) -> Dict[str, str]:
     logger.info(f"Getting form response from form {form_id}")
