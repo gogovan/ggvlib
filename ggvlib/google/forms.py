@@ -26,9 +26,6 @@ def _client() -> Resource:
     return build(
         "forms",
         "v1",
-        # http=creds.authorize(Http()),
-        # discoveryServiceUrl=DISCOVERY_DOC,
-        # static_discovery=False,
         credentials=credentials,
     )
 
@@ -44,17 +41,13 @@ def get_response_as_df(form_id) -> pd.DataFrame:
     response = get_response(form_id)
     for row in response["responses"]:
         return_list = list()
-        # print(row["createTime"])
-        # print(row["lastSubmittedTime"])
         return_list.append(row["responseId"])
         return_list.append(row["createTime"])
         return_list.append(row["lastSubmittedTime"])
         return_list.append(row["answers"])
         for val in row["answers"].values():
             for ans in list(val.values())[1].values():
-                if "value" not in list(ans[0].keys()):
-                    pass
-                else:
+                if "value" in list(ans[0].keys()):
                     return_list.append(ans[0]["value"])
 
         return_df = pd.concat([return_df, pd.DataFrame(return_list).T]).reset_index(
