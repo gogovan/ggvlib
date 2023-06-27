@@ -74,9 +74,9 @@ def get_responses_as_df(form_id: str) -> pd.DataFrame:
                 if "value" in list(answer[0].keys()):
                     return_list.append(answer[0]["value"])
 
-        return_df = pd.concat(
-            [return_df, pd.DataFrame(return_list).T]
-        ).reset_index(drop=True)
+        return_df = pd.concat([return_df, pd.DataFrame(return_list).T]).reset_index(
+            drop=True
+        )
     return_df = return_df.rename(
         columns={
             0: "response_id",
@@ -84,5 +84,56 @@ def get_responses_as_df(form_id: str) -> pd.DataFrame:
             2: "last_submitted_time",
             3: "answers",
         }
+    )
+    return return_df
+
+
+def get_questions(form_id: str) -> Dict[str, str]:
+    """Get questions for a given form_id
+
+    Args:
+        form_id (str): A form_id
+
+    Returns:
+        Dict[str, str]: A dictionary of the form's questions
+    """
+    logger.info(f"Getting questions from form {form_id}")
+    return _client().forms().get(formId=form_id).execute()
+
+
+def get_questions_as_df(form_id: str) -> pd.DataFrame:
+    """Get question for a given form_id as a Pandas DataFrame
+
+    Args:
+        form_id (str): A form_id
+
+    Returns:
+        pd.DataFrame: A DataFrame composed of the form's questions
+    """
+    return_df = pd.DataFrame()
+    data = get_questions(form_id)
+    logger.info(f"Getting questions as df from form {form_id}")
+    # print(data["items"])
+    return_df = pd.DataFrame()
+    for row in data["items"]:
+        if "questionItem" in row:
+            pair = list()
+            pair.append(row["title"])
+            pair.append(row["questionItem"]["question"]["questionId"])
+            pair.append("none")
+            return_df = pd.concat([return_df, pd.DataFrame(pair).T]).reset_index(
+                drop=True
+            )
+        elif "questionGroupItem" in row:
+            for item in row["questionGroupItem"]["questions"]:
+                pair = list()
+                pair.append(row["title"])
+                pair.append(item["questionId"])
+                pair.append(item["rowQuestion"]["title"])
+                return_df = pd.concat([return_df, pd.DataFrame(pair).T]).reset_index(
+                    drop=True
+                )
+    return_df = return_df.rename(
+        columns={0: "question_title", 1: "question_id", 2: "sub_question"}
     )
     return return_df
