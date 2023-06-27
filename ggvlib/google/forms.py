@@ -3,8 +3,6 @@ from ggvlib.logging import logger
 import google.auth
 from googleapiclient.discovery import build, Resource
 import pandas as pd
-import json
-
 
 DEFAULT_SCOPES = [
     "https://www.googleapis.com/auth/drive",
@@ -18,44 +16,67 @@ DEFAULT_SCOPES = [
 
 
 def _client() -> Resource:
+    """Returns a google forms client
+
+    Returns:
+        Resource: A Google Forms client
+    """
     credentials, _ = google.auth.default(scopes=DEFAULT_SCOPES)
     return build(
         "forms",
         "v1",
-        # http=creds.authorize(Http()),
-        # discoveryServiceUrl=DISCOVERY_DOC,
-        # static_discovery=False,
         credentials=credentials,
     )
 
 
-def get_response(form_id) -> Dict[str, str]:
-    logger.info(f"Getting form response from form {form_id}")
+def get_client() -> Resource:
+    """Returns a google forms client
+
+    Returns:
+        Resource: A Google Forms client
+    """
+    return _client()
+
+
+def get_responses(form_id: str) -> Dict[str, str]:
+    """Get responses for a given form_id
+
+    Args:
+        form_id (str): A form_id
+
+    Returns:
+        Dict[str, str]: A dictionary of the form's responses
+    """
+    logger.info(f"Getting form responses from form {form_id}")
     return _client().forms().responses().list(formId=form_id).execute()
 
 
-def get_response_as_df(form_id) -> pd.DataFrame:
+def get_responses_as_df(form_id: str) -> pd.DataFrame:
+    """Get responses for a given form_id as a Pandas DataFrame
+
+    Args:
+        form_id (str): A form_id
+
+    Returns:
+        pd.DataFrame: A DataFrame composed of the form's responses
+    """
     return_df = pd.DataFrame()
-    logger.info(f"Getting form response as df from form {form_id}")
-    response = get_response(form_id)
-    for row in response["responses"]:
+    logger.info(f"Getting form responses as df from form {form_id}")
+    responses = get_responses(form_id)
+    for row in responses["responses"]:
         return_list = list()
-        # print(row["createTime"])
-        # print(row["lastSubmittedTime"])
         return_list.append(row["responseId"])
         return_list.append(row["createTime"])
         return_list.append(row["lastSubmittedTime"])
         return_list.append(row["answers"])
         for val in row["answers"].values():
-            for ans in list(val.values())[1].values():
-                if "value" not in list(ans[0].keys()):
-                    pass
-                else:
-                    return_list.append(ans[0]["value"])
+            for answer in list(val.values())[1].values():
+                if "value" in list(answer[0].keys()):
+                    return_list.append(answer[0]["value"])
 
-        return_df = pd.concat([return_df, pd.DataFrame(return_list).T]).reset_index(
-            drop=True
-        )
+        return_df = pd.concat(
+            [return_df, pd.DataFrame(return_list).T]
+        ).reset_index(drop=True)
     return_df = return_df.rename(
         columns={
             0: "response_id",
