@@ -3,6 +3,7 @@ from ggvlib.logging import logger
 import google.auth
 from googleapiclient.discovery import build, Resource
 import pandas as pd
+import np
 
 DEFAULT_SCOPES = [
     "https://www.googleapis.com/auth/drive",
@@ -38,7 +39,7 @@ def get_client() -> Resource:
     return _client()
 
 
-def get_responses(form_id: str) -> Dict[str, str]:
+def get_raw_responses(form_id: str) -> Dict[str, str]:
     """Get responses for a given form_id
 
     Args:
@@ -51,7 +52,7 @@ def get_responses(form_id: str) -> Dict[str, str]:
     return _client().forms().responses().list(formId=form_id).execute()
 
 
-def get_responses_as_df(form_id: str) -> pd.DataFrame:
+def get_raw_responses_as_df(form_id: str) -> pd.DataFrame:
     """Get responses for a given form_id as a Pandas DataFrame
 
     Args:
@@ -62,29 +63,24 @@ def get_responses_as_df(form_id: str) -> pd.DataFrame:
     """
     return_df = pd.DataFrame()
     logger.info(f"Getting form responses as df from form {form_id}")
-    responses = get_responses(form_id)
+    responses = get_raw_responses(form_id)
     for row in responses["responses"]:
         return_list = list()
         return_list.append(row["responseId"])
         return_list.append(row["createTime"])
         return_list.append(row["lastSubmittedTime"])
         return_list.append(row["answers"])
+        col_names = ["responseId", "createTime", "LastSubmittedTime", "answer"]
         for val in row["answers"].values():
             for answer in list(val.values())[1].values():
                 if "value" in list(answer[0].keys()):
+                    col_names.append(val["questionId"])
                     return_list.append(answer[0]["value"])
 
         return_df = pd.concat([return_df, pd.DataFrame(return_list).T]).reset_index(
             drop=True
         )
-    return_df = return_df.rename(
-        columns={
-            0: "response_id",
-            1: "created_time",
-            2: "last_submitted_time",
-            3: "answers",
-        }
-    )
+    return_df.columns = col_names
     return return_df
 
 
@@ -113,7 +109,6 @@ def get_questions_as_df(form_id: str) -> pd.DataFrame:
     return_df = pd.DataFrame()
     data = get_questions(form_id)
     logger.info(f"Getting questions as df from form {form_id}")
-    # print(data["items"])
     return_df = pd.DataFrame()
     for row in data["items"]:
         if "questionItem" in row:
@@ -136,4 +131,27 @@ def get_questions_as_df(form_id: str) -> pd.DataFrame:
     return_df = return_df.rename(
         columns={0: "question_title", 1: "question_id", 2: "sub_question"}
     )
+    return return_df
+
+
+def get_responses_as_df(form_id: str) -> pd.DataFrame:
+    """Get responses for a given form_id as a Pandas DataFrame
+
+    Args:
+        form_id (str): A form_id
+
+    Returns:
+        pd.DataFrame: A DataFrame composed of the form's responses mapped with questions as column
+    """
+    question = get_questions_as_df(form_id)
+    response = get_raw_responses_as_df(form_id)
+    question["name"] = np.where(
+        question["sub_question"] == "none",
+        question["question_title"],
+        question["question_title"] + "-" + question["sub_question"],
+    )
+    name_dict = dict()
+    for id, name in zip(question["question_id"], question["name"]):
+        name_dict[id] = name
+    return_df = response.rename(columns=name_dict)
     return return_df
