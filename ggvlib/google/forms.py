@@ -1,11 +1,7 @@
-import itertools
-import re
-import string
-from typing import Dict, List
+from typing import Dict
 from ggvlib.logging import logger
 import google.auth
 from googleapiclient.discovery import build, Resource
-from httplib2 import Http
 import pandas as pd
 import json
 
