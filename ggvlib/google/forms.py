@@ -3,7 +3,7 @@ from ggvlib.logging import logger
 import google.auth
 from googleapiclient.discovery import build, Resource
 import pandas as pd
-import np
+import numpy as np
 
 DEFAULT_SCOPES = [
     "https://www.googleapis.com/auth/drive",
