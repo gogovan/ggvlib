@@ -3,7 +3,8 @@ from ggvlib.logging import logger
 import google.auth
 from googleapiclient.discovery import build, Resource
 import pandas as pd
-import np
+import numpy as np
+
 
 DEFAULT_SCOPES = [
     "https://www.googleapis.com/auth/drive",
@@ -113,7 +114,7 @@ def get_questions_as_df(form_id: str) -> pd.DataFrame:
     for row in data["items"]:
         if "questionItem" in row:
             pair = list()
-            pair.append(row["title"])
+            pair.append(row["title"].strip())
             pair.append(row["questionItem"]["question"]["questionId"])
             pair.append("none")
             return_df = pd.concat([return_df, pd.DataFrame(pair).T]).reset_index(
@@ -122,7 +123,7 @@ def get_questions_as_df(form_id: str) -> pd.DataFrame:
         elif "questionGroupItem" in row:
             for item in row["questionGroupItem"]["questions"]:
                 pair = list()
-                pair.append(row["title"])
+                pair.append(row["title"].strip())
                 pair.append(item["questionId"])
                 pair.append(item["rowQuestion"]["title"])
                 return_df = pd.concat([return_df, pd.DataFrame(pair).T]).reset_index(
