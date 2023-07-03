@@ -6,6 +6,7 @@ import pandas as pd
 import numpy as np
 
 
+
 DEFAULT_SCOPES = [
     "https://www.googleapis.com/auth/drive",
     "https://www.googleapis.com/auth/drive.file",
@@ -65,23 +66,26 @@ def get_raw_responses_as_df(form_id: str) -> pd.DataFrame:
     return_df = pd.DataFrame()
     logger.info(f"Getting form responses as df from form {form_id}")
     responses = get_raw_responses(form_id)
-    for row in responses["responses"]:
-        return_list = list()
-        return_list.append(row["responseId"])
-        return_list.append(row["createTime"])
-        return_list.append(row["lastSubmittedTime"])
-        return_list.append(row["answers"])
-        col_names = ["responseId", "createTime", "LastSubmittedTime", "answer"]
-        for val in row["answers"].values():
-            for answer in list(val.values())[1].values():
-                if "value" in list(answer[0].keys()):
-                    col_names.append(val["questionId"])
-                    return_list.append(answer[0]["value"])
+    if "responses" in responses.keys():
+        for row in responses["responses"]:
+            return_list = list()
+            return_list.append(row["responseId"])
+            return_list.append(row["createTime"])
+            return_list.append(row["lastSubmittedTime"])
+            return_list.append(row["answers"])
+            col_names = ["responseId", "createTime", "LastSubmittedTime", "answer"]
+            for val in row["answers"].values():
+                for answer in list(val.values())[1].values():
+                    if "value" in list(answer[0].keys()):
+                        col_names.append(val["questionId"])
+                        return_list.append(answer[0]["value"])
 
-        return_df = pd.concat([return_df, pd.DataFrame(return_list).T]).reset_index(
-            drop=True
-        )
-    return_df.columns = col_names
+            return_df = pd.concat([return_df, pd.DataFrame(return_list).T]).reset_index(
+                drop=True
+            )
+        return_df.columns = col_names
+    else:
+        logger.info(f"There is no responses in form {form_id}")
     return return_df
 
 
@@ -156,3 +160,4 @@ def get_responses_as_df(form_id: str) -> pd.DataFrame:
         name_dict[id] = name
     return_df = response.rename(columns=name_dict)
     return return_df
+
