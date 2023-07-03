@@ -5,6 +5,8 @@ from googleapiclient.discovery import build, Resource
 import pandas as pd
 import numpy as np
 
+
+
 DEFAULT_SCOPES = [
     "https://www.googleapis.com/auth/drive",
     "https://www.googleapis.com/auth/drive.file",
@@ -159,5 +161,3 @@ def get_responses_as_df(form_id: str) -> pd.DataFrame:
     return_df = response.rename(columns=name_dict)
     return return_df
 
-
-get_responses_as_df("1QvSmtVTVPfY7jkU21scy-q3YmWjBQiLBZgfuvNJocFc")
