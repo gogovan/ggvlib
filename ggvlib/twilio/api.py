@@ -31,12 +31,18 @@ class ContentType(BaseModel):
     def content_validator(cls, values: dict):
         if values.get("category") == "list-picker":
             if not values.get("items"):
-                raise ValueError("list-picker content requires an 'items' value")
+                raise ValueError(
+                    "list-picker content requires an 'items' value"
+                )
             if not values.get("button"):
-                raise ValueError("list-picker content requires an 'button' value")
+                raise ValueError(
+                    "list-picker content requires an 'button' value"
+                )
         if values.get("category") in ("quick-reply", "call-to-action"):
             if not values.get("actions"):
-                raise ValueError("list-picker content requires an 'items' value")
+                raise ValueError(
+                    "list-picker content requires an 'items' value"
+                )
         return values
 
     def to_dict(self) -> dict:
@@ -88,7 +94,8 @@ class ContentCreateRequest(BaseModel):
             **{k: v for k, v in cls.dict().items() if k not in exclude},
             **{
                 "types": {
-                    f"twilio/{t.category}": t.to_dict() for t in cls.content_types
+                    f"twilio/{t.category}": t.to_dict()
+                    for t in cls.content_types
                 }
             },
         )
@@ -142,7 +149,9 @@ class MessagingServiceUpdateRequest(BaseModel):
         content = {to_form_field(k): v for k, v in d.items() if v}
         if list(content.keys()) == ["Sid"]:
             required = [k for k in d.keys() if k != "sid"]
-            raise ValueError(f"One of the following values is required: {required}")
+            raise ValueError(
+                f"One of the following values is required: {required}"
+            )
         return content
 
 
@@ -220,7 +229,9 @@ class Client:
         if response.status_code == accept_status_code:
             return response.json()
         else:
-            raise Exception(f"Client did not accept request: {response.json()}")
+            raise Exception(
+                f"Client did not accept request: {response.json()}"
+            )
 
 
 class MessagingServiceApiClient(Client):
@@ -233,7 +244,9 @@ class MessagingServiceApiClient(Client):
         Returns:
             dict: _description_
         """
-        return requests.get(url=self.api_base_url, headers=self.json_headers).json()
+        return requests.get(
+            url=self.api_base_url, headers=self.json_headers
+        ).json()
 
     def get(self, service_sid: str) -> dict:
         """_summary_
@@ -349,13 +362,7 @@ class MessagingApiClient(Client):
         Returns:
             List[aiohttp.ClientResponse]: A list of responses from the client
         """
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError as ex:
-            if "There is no current event loop in thread" in str(ex):
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-                loop = asyncio.get_event_loop()
+        loop = asyncio.get_event_loop()
         return loop.run_until_complete(
             self._async_send_content(message_batch=message_batch)
         )
@@ -377,7 +384,9 @@ class MessagingApiClient(Client):
             headers=self.form_headers, trust_env=True
         ) as session:
             for request in message_batch:
-                tasks.append(self._post_async(session=session, payload=request))
+                tasks.append(
+                    self._post_async(session=session, payload=request)
+                )
             response_data = await asyncio.gather(*tasks)
             await session.close()
             return response_data
@@ -422,7 +431,9 @@ class ContentApiClient(Client):
         if response.status_code == 200:
             return response.json()
         else:
-            raise Exception(f"Client did not accept request: {response.json()}")
+            raise Exception(
+                f"Client did not accept request: {response.json()}"
+            )
 
     def delete_content(self, content_sid: str) -> None:
         response = requests.delete(
@@ -432,7 +443,9 @@ class ContentApiClient(Client):
         if response.status_code == 204:
             return
         elif response.status_code == 404:
-            logger.warning(f"The requested content_sid '{content_sid}' does not exist.")
+            logger.warning(
+                f"The requested content_sid '{content_sid}' does not exist."
+            )
         else:
             raise Exception(f"Client did not accept request: {str(response)}")
 
@@ -452,7 +465,9 @@ class ContentApiClient(Client):
         if response.status_code == 201:
             return response.json()
         else:
-            raise Exception(f"Client did not accept request: {response.json()}")
+            raise Exception(
+                f"Client did not accept request: {response.json()}"
+            )
 
     def create_content(self, payload: ContentCreateRequest) -> dict:
         """Used for creating content with the Content API
@@ -474,4 +489,6 @@ class ContentApiClient(Client):
         if response.status_code == 201:
             return response.json()
         else:
-            raise Exception(f"Client did not accept request: {response.json()}")
+            raise Exception(
+                f"Client did not accept request: {response.json()}"
+            )
