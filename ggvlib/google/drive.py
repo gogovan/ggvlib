@@ -46,9 +46,7 @@ def get_item(item_id: str) -> Dict[str, str]:
     request = (
         _service()
         .files()
-        .get(
-            fileId=item_id, fields=get_default_fields(), supportsAllDrives=True
-        )
+        .get(fileId=item_id, fields=get_default_fields(), supportsAllDrives=True)
     )
     return request.execute()
 
@@ -98,7 +96,7 @@ def upload_file(
     """
     meta_data = {"name": name_on_drive, "mimeType": mime_type}
     if parent_id:
-        meta_data["parents"] = parent_id
+        meta_data["parents"] = List[parent_id]
     media = MediaFileUpload(filename=local_path, mimetype=mime_type)
     return (
         _service()
@@ -119,8 +117,7 @@ def share_file(emails: List[str], item_id: str, role: str = "writer") -> None:
     service = _service()
     batch = service.new_batch_http_request()
     for user_permission in [
-        {"type": "user", "role": role, "emailAddress": email}
-        for email in emails
+        {"type": "user", "role": role, "emailAddress": email} for email in emails
     ]:
         batch.add(
             service.permissions().create(
