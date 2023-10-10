@@ -96,7 +96,7 @@ def upload_file(
     """
     meta_data = {"name": name_on_drive, "mimeType": mime_type}
     if parent_id:
-        meta_data["parents"] = List[parent_id]
+        meta_data["parents"] = parent_id
     media = MediaFileUpload(filename=local_path, mimetype=mime_type)
     return (
         _service()
