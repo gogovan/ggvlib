@@ -6,7 +6,6 @@ import pandas as pd
 import numpy as np
 
 
-
 DEFAULT_SCOPES = [
     "https://www.googleapis.com/auth/drive",
     "https://www.googleapis.com/auth/drive.file",
@@ -68,6 +67,7 @@ def get_raw_responses_as_df(form_id: str) -> pd.DataFrame:
     responses = get_raw_responses(form_id)
     if "responses" in responses.keys():
         for row in responses["responses"]:
+            # logger.info(row)
             return_list = list()
             return_list.append(row["responseId"])
             return_list.append(row["createTime"])
@@ -75,11 +75,17 @@ def get_raw_responses_as_df(form_id: str) -> pd.DataFrame:
             return_list.append(row["answers"])
             col_names = ["responseId", "createTime", "LastSubmittedTime", "answer"]
             for val in row["answers"].values():
-                for answer in list(val.values())[1].values():
+                # for elem in list(val.values()):
+                # if type(elem) == dict and elem.get("answers"):
+                #     for ans in elem.get("answers"):
+                #         logger.info(ans)
+                #         if "value" in list(ans[0].keys()):
+                #             col_names.append(val["questionId"])
+                #     return_list.append(ans[0]["value"])
+                for answer in list(val.values())[2].values():
                     if "value" in list(answer[0].keys()):
                         col_names.append(val["questionId"])
                         return_list.append(answer[0]["value"])
-
             return_df = pd.concat([return_df, pd.DataFrame(return_list).T]).reset_index(
                 drop=True
             )
@@ -160,4 +166,3 @@ def get_responses_as_df(form_id: str) -> pd.DataFrame:
         name_dict[id] = name
     return_df = response.rename(columns=name_dict)
     return return_df
-
