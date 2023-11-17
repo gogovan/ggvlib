@@ -84,10 +84,7 @@ def query_to_storage_df(query: str) -> pd.DataFrame:
     logger.debug(f"Running query: {query}")
     storage_client = bigquery_storage.BigQueryReadClient()
     result = (
-        _client()
-        .query(query)
-        .result()
-        .to_dataframe(bqstorage_client=storage_client)
+        _client().query(query).result().to_dataframe(bqstorage_client=storage_client)
     )
     logger.debug(f"Result: {len(result)} row(s)")
     return result
@@ -137,3 +134,16 @@ def query_to_storage(
     else:
         raise ValueError("Invalid Big Query export format")
     return query_job.result()
+
+
+def get_table_info(project, dataset, table):
+
+    logger.debug(f"Getting table info: {table}")
+    # Make an API request to get the table resource.
+    try:
+        view = _client().get_table(f"{project}.{dataset}.{table}")
+    except Exception as e:
+        logger.info(f"Cannont get table info{e}")
+        view = None
+
+    return view
