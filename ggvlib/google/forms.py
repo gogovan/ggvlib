@@ -75,14 +75,7 @@ def get_raw_responses_as_df(form_id: str) -> pd.DataFrame:
             return_list.append(row["answers"])
             col_names = ["responseId", "createTime", "LastSubmittedTime", "answer"]
             for val in row["answers"].values():
-                # for elem in list(val.values()):
-                # if type(elem) == dict and elem.get("answers"):
-                #     for ans in elem.get("answers"):
-                #         logger.info(ans)
-                #         if "value" in list(ans[0].keys()):
-                #             col_names.append(val["questionId"])
-                #     return_list.append(ans[0]["value"])
-                for answer in list(val.values())[2].values():
+                for answer in list(val["textAnswers"].values()):
                     if "value" in list(answer[0].keys()):
                         col_names.append(val["questionId"])
                         return_list.append(answer[0]["value"])
