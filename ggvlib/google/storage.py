@@ -95,6 +95,16 @@ def download_to_stream(
     return file_object
 
 
+def download_file(
+        bucket_name:str, file_path:str, dest_path:str
+)->None:
+    """Download file from bucket to path"""
+
+    blob = storage.Client().bucket(bucket_name).blob(file_path)
+    blob.download_to_filename(dest_path)
+    return None
+
+
 def share(
     bucket_name: str,
     cloud_storage_path: str,
