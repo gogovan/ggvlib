@@ -1,6 +1,7 @@
 import json
 import os
 import requests
+import urllib
 from datetime import datetime, timedelta
 from typing import List
 from jsonschema import validate
@@ -562,3 +563,78 @@ class Client:
             )
             if response.status_code != 202:
                 logger.error(response.json())
+
+    def create_or_update_contact_batch(self, contacts: List[Contact]) -> None:
+        """Create or update a list of Contacts
+        # Args:
+        #     contacts (List[Contact]): A list of Hubspot contacts
+        # >>> new_contacts = [
+        # ...        Contact(
+        # ...            email="a.person@gogox.com",
+        # ...            properties=[
+        # ...                {"property": "include_in_call_list", "value": False},
+        # ...            ],
+        # ...        ),
+        # ...        Contact(
+        # ...            email="another.person@gogox.com",
+        # ...            properties=[
+        # ...                {"property": "include_in_gge_call_list", "value": True},
+        # ...                {"property": "firstname", "value": "Another"},
+        # ...                {"property": "lastname", "value": "Person"},
+        # ...            ],
+        # ...        ),
+        # ]
+        """
+        for contact_batch in list(chunks(contacts, 1000)):
+            logger.info(f"Updating batch of {len(contact_batch)} contact(s)")
+            response = requests.post(
+                f"{self.api_base_url}/contacts/v1/contact/batch",
+                headers=self.json_header,
+                data=json.dumps([c.dict() for c in contacts]),
+            )
+            if response.status_code != 202:
+                logger.error(response.json())
+
+
+    def get_object_all(self,object_id,properties) -> None:
+
+        """
+        Returns all the observations required properties 
+        Args:
+            object_id (str): The object id  example: '2-9569944'
+            properties (List[str], optional): A list of properties. Defaults to []. example: ['firstname','lastname','email','phone']
+
+        Returns:
+            List[dict]: A list of row of the object
+        """
+
+        all_data = []
+        parameter_dict = {
+                  'limit': 100,
+                 }
+    
+        parameter_dict['properties'] = properties
+
+        parameters = urllib.parse.urlencode(parameter_dict,doseq=True)  # Correct function call
+        url = f"{self.api_base_url}/crm/v3/objects/{object_id}?{parameters}"
+
+        while url:
+            response = requests.get(
+                url,
+                headers=self.json_header
+            )
+
+            if response.status_code != 200:
+                raise Exception(f"API request failed with status {response.status_code}: {response.text}")
+
+            data = response.json()
+            all_data.extend(data.get('results', []))  # Assuming results are stored in 'results' key
+
+            # Check for next page
+            paging = data.get('paging', {}).get('next')
+            if paging:
+                url = paging['link']
+            else:
+                url = None  
+
+        return all_data
