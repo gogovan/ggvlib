@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ggvlib"
-version = "0.2.52"
+version = "0.2.54"
 
 description = ""
 authors = ["Adam Hoffstein <adam.hoffstein@gogox.com>","Jace Chun <jace.chun@gogox.com>"]
@@ -24,6 +24,7 @@ jsonschema = "^4.17.0"
 google-auth-oauthlib = "^0.8.0"
 sendgrid = "^6.9.7"
 google-cloud-pubsub = "^2.14.0"
+sqlalchemy = "^2.0.31"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
@@ -35,8 +36,41 @@ sphinx-autoapi = "^2.0.0"
 [tool.poetry.group.dev.dependencies]
 python-dotenv = "^0.21.0"
 
+
+[tool.pdm]
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry_bumpversion.file."ggvlib/__init__.py"]
+[project]
+authors = [
+    {name = "Adam Hoffstein", email = "adam.hoffstein@gogox.com"},
+    {name = "Jace Chun", email = "jace.chun@gogox.com"},
+]
+requires-python = "<3.11,>=3.8"
+dependencies = [
+    "google-cloud-bigquery<4.0.0,>=3.3.5",
+    "loguru>0.5.0",
+    "pandas<3,>=1.5.1",
+    "pyyaml<7.0,>=6.0",
+    "google-cloud-storage<3.0.0,>=2.5.0",
+    "google-cloud-bigquery-storage<3.0.0,>=2.16.2",
+    "db-dtypes<2.0.0,>=1.0.4",
+    "google-api-python-client<3.0.0,>=2.65.0",
+    "pydantic<2.0.0,>=1.10.2",
+    "aiohttp<4.0.0,>=3.8.3",
+    "google-cloud-secret-manager<3.0.0,>=2.12.6",
+    "google-crc32c<2.0.0,>=1.5.0",
+    "google-cloud-scheduler<3.0.0,>=2.7.3",
+    "jsonschema<5.0.0,>=4.17.0",
+    "google-auth-oauthlib<1.0.0,>=0.8.0",
+    "sendgrid<7.0.0,>=6.9.7",
+    "google-cloud-pubsub<3.0.0,>=2.14.0",
+    "sqlalchemy<3.0.0,>=2.0.31",
+    "cloud-sql-python-connector>=1.10.0",
+    "pg8000>=1.31.2",
+]
+name = "ggvlib"
+version = "0.2.53"
+description = ""
