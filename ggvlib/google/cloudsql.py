@@ -59,9 +59,10 @@ class Postgres:
             db.connect_postgres(INSTANCE_CONNECTION_NAME, DB_USER, DB_PASS, DB_NAME, PRIVATE_IP)
         ## execute the query
             result = db.query_from_sql("SELECT * FROM table_name;")
+            result.fetchall()
         """
 
         query = text(sql)
         with self.engine.connect() as conn:
             result = conn.execute(query)
-        return result.fetchall()
+        return result
