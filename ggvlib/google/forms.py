@@ -65,6 +65,7 @@ def get_raw_responses_as_df(form_id: str) -> pd.DataFrame:
     return_df = pd.DataFrame()
     logger.info(f"Getting form responses as df from form {form_id}")
     responses = get_raw_responses(form_id)
+    logger.info(responses)
     if "responses" in responses.keys():
         for row in responses["responses"]:
             # logger.info(row)
