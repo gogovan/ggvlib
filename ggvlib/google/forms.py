@@ -50,7 +50,7 @@ def get_raw_responses(form_id: str) -> Dict[str, str]:
         Dict[str, str]: A dictionary of the form's responses
     """
     logger.info(f"Getting form responses from form {form_id}")
-    return _client().forms().responses().list(formId=form_id).execute()
+    return _client().forms().responses().list(formId=form_id, pageSize=50000).execute()
 
 
 def get_raw_responses_as_df(form_id: str) -> pd.DataFrame:
