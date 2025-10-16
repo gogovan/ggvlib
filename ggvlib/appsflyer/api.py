@@ -7,7 +7,7 @@ from ggvlib.logging import logger
 
 class Client:
     base_url = "https://hq1.appsflyer.com/api/raw-data/export/app"
-    report_types = ["installs_report", "in_app_events_report"]
+    report_types = ["installs_report", "in_app_events_report","in_app_events_retarget"]
     api_version = 5
 
     def __init__(self, api_key: str) -> None:
@@ -63,5 +63,5 @@ class Client:
             return df
         else:
             raise ValueError(
-                "Invalid report type. Please select from [installs_report, in_app_events_report]"
+                "Invalid report type. Please select from [installs_report, in_app_events_report,in_app_events_retarget]"
             )
